@@ -150,7 +150,7 @@ func NewGateway(urls []string, options ...GatewayOption) (*Gateway, error) {
 }
 
 type Result struct {
-	Errors gqlerrors.ErrorList    `json:"errors"`
+	Errors gqlerrors.ErrorList    `json:"errors,omitempty"`
 	Data   map[string]interface{} `json:"data"`
 
 	index int `json:"-"`

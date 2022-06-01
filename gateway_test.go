@@ -242,6 +242,8 @@ func TestGatewaySingleQuery(t *testing.T) {
 	json.Unmarshal(b, &res)
 
 	assert.Equal(t, "YES", res["data"].(map[string]interface{})["test"])
+	_, hasErrorsKeyword := res["errors"]
+	assert.False(t, hasErrorsKeyword)
 }
 
 func TestGatewayMultipleQueries(t *testing.T) {
@@ -287,6 +289,11 @@ func TestGatewayMultipleQueries(t *testing.T) {
 	assert.Len(t, res, 2)
 
 	assert.Equal(t, "YES", res[0]["data"].(map[string]interface{})["test"])
+
+	for _, r := range res {
+		_, hasErrorsKeyword := r["errors"]
+		assert.False(t, hasErrorsKeyword)
+	}
 }
 
 func TestGatewayIntrospectionQuery(t *testing.T) {
