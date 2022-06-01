@@ -77,7 +77,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/buildbuildio/pebbels"
+	"github.com/buildbuildio/pebbles"
 )
 
 func main() {
@@ -85,9 +85,9 @@ func main() {
 		"http://localhost:3000",
 	}
 
-	gw, err := pebbels.NewGateway(
+	gw, err := pebbles.NewGateway(
 		urls,
-		pebbels.WithDefaultPlayground(),
+		pebbles.WithDefaultPlayground(),
 	)
 	if err != nil {
 		panic(err)

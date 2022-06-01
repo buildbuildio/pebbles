@@ -1,4 +1,4 @@
-package gateway
+package pebbles
 
 import (
 	"encoding/json"
