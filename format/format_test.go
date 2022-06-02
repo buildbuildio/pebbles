@@ -9,6 +9,49 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
+func TestFormatWithArgsNoArgs(t *testing.T) {
+	s := ast.SelectionSet{
+		&ast.Field{
+			Name: common.NodeFieldName,
+			Definition: &ast.FieldDefinition{
+				Name: "Node",
+				Type: ast.NamedType("Node", nil),
+			},
+			SelectionSet: ast.SelectionSet{
+				&ast.Field{
+					Name: common.IDFieldName,
+				},
+			},
+		},
+	}
+
+	res := DebugFormatSelectionSetWithArgs(s)
+
+	assert.Equal(t, `{ node { id }}`, res)
+}
+
+func TestFormatWithArgsNoArgsWithOperationName(t *testing.T) {
+	s := ast.SelectionSet{
+		&ast.Field{
+			Name: common.NodeFieldName,
+			Definition: &ast.FieldDefinition{
+				Name: "Node",
+				Type: ast.NamedType("Node", nil),
+			},
+			SelectionSet: ast.SelectionSet{
+				&ast.Field{
+					Name: common.IDFieldName,
+				},
+			},
+		},
+	}
+
+	opName := "getNode"
+	res := FormatSelectionSetWithArgs(s, &opName)
+
+	assert.Equal(t, "query getNode {\n\tnode {\n\t\tid\n\t}\n}", res)
+}
+
 func TestFormatWithArgs(t *testing.T) {
 	s := ast.SelectionSet{
 		&ast.Field{
@@ -79,7 +122,7 @@ func TestFormatWithArgsWithOperationName(t *testing.T) {
 	opName := "getNode"
 	res := FormatSelectionSetWithArgs(s, &opName)
 
-	assert.Equal(t, "query getNode ($id: ID!) {\n\tnode(id: $id) {\n\t\tid\n\t}\n}", res)
+	assert.Equal(t, "query getNode($id: ID!) {\n\tnode(id: $id) {\n\t\tid\n\t}\n}", res)
 }
 
 func TestFormatWithArgsComplex(t *testing.T) {

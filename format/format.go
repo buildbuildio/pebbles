@@ -229,6 +229,9 @@ func FormatSelectionSetWithArgs(s ast.SelectionSet, operationName *string) strin
 	args := walkArgumentList(s)
 
 	if len(args) == 0 {
+		if operationName != nil {
+			return fmt.Sprintf("query %s %s", *operationName, v)
+		}
 		return v
 	}
 
@@ -241,12 +244,11 @@ func FormatSelectionSetWithArgs(s ast.SelectionSet, operationName *string) strin
 
 	argList := strings.Join(tuples, ", ")
 
-	result := "query"
 	if operationName != nil {
-		result = fmt.Sprintf("%s %s", result, *operationName)
+		return fmt.Sprintf("query %s(%s) %s", *operationName, argList, v)
 	}
 
-	return fmt.Sprintf("%s (%s) %s", result, argList, v)
+	return fmt.Sprintf("query (%s) %s", argList, v)
 }
 
 func walkArgumentList(s ast.SelectionSet) map[string]string {
