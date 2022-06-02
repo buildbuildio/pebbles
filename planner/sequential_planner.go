@@ -33,14 +33,6 @@ func (sp SequentialPlanner) Plan(ctx *PlanningContext) (*QueryPlan, error) {
 		return nil, err
 	}
 
-	// set OperationName for root steps if provided
-	// by realization there're no operations in sub query
-	if ctx.Operation.Name != "" {
-		for _, step := range steps {
-			step.OperationName = &ctx.Operation.Name
-		}
-	}
-
 	return &QueryPlan{
 		RootSteps:   steps,
 		ScrubFields: sf,
@@ -161,6 +153,12 @@ func createQueryPlanSteps(ctx *PlanningContext, insertionPoint []string, parentT
 			URL:            location,
 			ParentType:     parentType,
 			SelectionSet:   selectionSetForLocation,
+		}
+
+		// set OperationName for root steps if provided
+		// by realization there're no operations in sub query
+		if ctx.Operation.Name != "" && len(insertionPoint) == 0 {
+			qps.OperationName = &ctx.Operation.Name
 		}
 
 		result = append(result, qps.SetQuery().SetVariablesList())
