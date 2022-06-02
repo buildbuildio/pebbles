@@ -45,6 +45,43 @@ func TestFormatWithArgs(t *testing.T) {
 	assert.Equal(t, `query ($id: ID!) { node(id: $id) { id }}`, res)
 }
 
+func TestFormatWithArgsWithOperationName(t *testing.T) {
+	s := ast.SelectionSet{
+		&ast.Field{
+			Name: common.NodeFieldName,
+			Definition: &ast.FieldDefinition{
+				Name: "Node",
+				Type: ast.NamedType("Node", nil),
+				Arguments: ast.ArgumentDefinitionList{
+					&ast.ArgumentDefinition{
+						Name: "id",
+						Type: ast.NamedType("ID!", nil),
+					},
+				},
+			},
+			Arguments: ast.ArgumentList{
+				&ast.Argument{
+					Name: common.IDFieldName,
+					Value: &ast.Value{
+						Kind: ast.Variable,
+						Raw:  common.IDFieldName,
+					},
+				},
+			},
+			SelectionSet: ast.SelectionSet{
+				&ast.Field{
+					Name: common.IDFieldName,
+				},
+			},
+		},
+	}
+
+	opName := "getNode"
+	res := FormatSelectionSetWithArgs(s, &opName)
+
+	assert.Equal(t, "query getNode ($id: ID!) {\n\tnode(id: $id) {\n\t\tid\n\t}\n}", res)
+}
+
 func TestFormatWithArgsComplex(t *testing.T) {
 
 	s := ast.SelectionSet{

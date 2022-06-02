@@ -209,7 +209,7 @@ func (f *formatter) FormatInlineFragment(inline *ast.InlineFragment) {
 }
 
 func DebugFormatSelectionSetWithArgs(s ast.SelectionSet) string {
-	v := FormatSelectionSetWithArgs(s)
+	v := FormatSelectionSetWithArgs(s, nil)
 
 	v = strings.ReplaceAll(v, "\t", " ")
 	v = strings.ReplaceAll(v, "\n", "")
@@ -219,7 +219,7 @@ func DebugFormatSelectionSetWithArgs(s ast.SelectionSet) string {
 	return v
 }
 
-func FormatSelectionSetWithArgs(s ast.SelectionSet) string {
+func FormatSelectionSetWithArgs(s ast.SelectionSet, operationName *string) string {
 	buf := bytes.NewBufferString("")
 	defer buf.Reset()
 	f := NewFormatter(buf)
@@ -241,7 +241,12 @@ func FormatSelectionSetWithArgs(s ast.SelectionSet) string {
 
 	argList := strings.Join(tuples, ", ")
 
-	return fmt.Sprintf("query (%s) %s", argList, v)
+	result := "query"
+	if operationName != nil {
+		result = fmt.Sprintf("%s %s", result, *operationName)
+	}
+
+	return fmt.Sprintf("%s (%s) %s", result, argList, v)
 }
 
 func walkArgumentList(s ast.SelectionSet) map[string]string {
