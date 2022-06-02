@@ -21,12 +21,45 @@ func TestSimplePlan(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getMovies { id title(language: French) author { id } }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "1",
 					"ParentType": "Author",
+					"OperationName": null,
+					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Author { name } }}",
+					"InsertionPoint": ["getMovies", "author"],
+					"Then": null
+				}
+			]
+		  }
+		],
+		"ScrubFields": null
+	  }`
+
+	assert.JSONEq(t, expected, actual)
+}
+
+func TestSimplePlanOperationName(t *testing.T) {
+	query := `query Operation { getMovies { id title(language: French) author { id name } }}`
+
+	actual, _ := mustRunPlanner(t, seqPlan, simpleSchema, query, simpleTum)
+
+	expected := `{
+		"RootSteps": [
+		  {
+			"URL": "0",
+			"ParentType": "Query",
+			"OperationName": "Operation",
+			"SelectionSet": "{ getMovies { id title(language: French) author { id } }}",
+			"InsertionPoint": null,
+			"Then": [
+				{
+					"URL": "1",
+					"ParentType": "Author",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Author { name } }}",
 					"InsertionPoint": ["getMovies", "author"],
 					"Then": null
@@ -50,12 +83,14 @@ func TestSimplePlanWithTypename(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getMovies { __typename id title(language: French) author { __typename id } }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "1",
 					"ParentType": "Author",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Author { name } }}",
 					"InsertionPoint": ["getMovies", "author"],
 					"Then": null
@@ -79,12 +114,14 @@ func TestSimpleMutation(t *testing.T) {
 		  {
 			"URL": "1",
 			"ParentType": "Mutation",
+			"OperationName": null,
 			"SelectionSet": "{ saveAuthor(input: {name:\"Name\"}) { id name }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "0",
 					"ParentType": "Author",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Author { movies { id title(language: French) } } }}",
 					"InsertionPoint": ["saveAuthor"],
 					"Then": null
@@ -108,12 +145,14 @@ func TestSimplePlanMultipleQueries(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ a: getMovies { id title(language: French) author { id } } b: getMovies { id title(language: French) author { id } }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "1",
 					"ParentType": "Author",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Author { name } }}",
 					"InsertionPoint": ["a", "author"],
 					"Then": null
@@ -121,6 +160,7 @@ func TestSimplePlanMultipleQueries(t *testing.T) {
 				{
 					"URL": "1",
 					"ParentType": "Author",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Author { name } }}",
 					"InsertionPoint": ["b", "author"],
 					"Then": null
@@ -144,12 +184,14 @@ func TestSimplePlanNoIDs(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getMovies { id title(language: French) author { id } }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "1",
 					"ParentType": "Author",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Author { name } }}",
 					"InsertionPoint": ["getMovies", "author"],
 					"Then": null
@@ -173,12 +215,14 @@ func TestSimplePlanNoIDsAlias(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ m: getMovies { id t: title(language: French) a: author { id } }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "1",
 					"ParentType": "Author",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Author { n: name } }}",
 					"InsertionPoint": ["m", "a"],
 					"Then": null
@@ -202,12 +246,14 @@ func TestSimplePlanNoIDsDeep(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getMovies { id author { id movies { id title(language: French) filmedBy { id } } } }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "1",
 					"ParentType": "Author",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Author { name } }}",
 					"InsertionPoint": ["getMovies", "author"],
 					"Then": null
@@ -215,6 +261,7 @@ func TestSimplePlanNoIDsDeep(t *testing.T) {
 				{
 					"URL": "1",
 					"ParentType": "Author",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Author { name } }}",
 					"InsertionPoint": ["getMovies", "author", "movies", "filmedBy"],
 					"Then": null
@@ -243,12 +290,14 @@ func TestSimplePlanInlineFragment(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getMovies { __typename id title(language: French) author { id } }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "1",
 					"ParentType": "Author",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Author { name } }}",
 					"InsertionPoint": ["getMovies", "author"],
 					"Then": null
@@ -287,12 +336,14 @@ func TestSimplePlanSpreadFragment(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getMovies { __typename id title(language: French) author { id } }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "1",
 					"ParentType": "Author",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Author { name } }}",
 					"InsertionPoint": ["getMovies", "author"],
 					"Then": null
@@ -328,12 +379,14 @@ func TestSimplePlanSpreadFragmentManyUsages(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getMovies { id author { id } filmedBy { id } }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "1",
 					"ParentType": "Author",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Author { name } }}",
 					"InsertionPoint": ["getMovies", "author"],
 					"Then": null
@@ -341,6 +394,7 @@ func TestSimplePlanSpreadFragmentManyUsages(t *testing.T) {
 				{
 					"URL": "1",
 					"ParentType": "Author",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Author { name } }}",
 					"InsertionPoint": ["getMovies", "filmedBy"],
 					"Then": null
@@ -383,12 +437,14 @@ func TestUnionPlanUnion(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getAnimals { __typename ... on Cat { id } ... on Dog { id } ... on Wolf { id species } }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "1",
 					"ParentType": "Cat",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Cat { name } }}",
 					"InsertionPoint": ["getAnimals"],
 					"Then": null
@@ -396,6 +452,7 @@ func TestUnionPlanUnion(t *testing.T) {
 				{
 					"URL": "1",
 					"ParentType": "Dog",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Dog { name trained } }}",
 					"InsertionPoint": ["getAnimals"],
 					"Then": null
@@ -425,6 +482,7 @@ func TestUnionPlanJustTypename(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getAnimals { __typename }}",
 			"InsertionPoint": null,
 			"Then": null
@@ -462,12 +520,14 @@ func TestUnionPlanUnionPartialScrubFields(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getAnimals { __typename ... on Cat { id } ... on Dog { id } ... on Wolf { id species } }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "1",
 					"ParentType": "Cat",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Cat { name } }}",
 					"InsertionPoint": ["getAnimals"],
 					"Then": null
@@ -475,6 +535,7 @@ func TestUnionPlanUnionPartialScrubFields(t *testing.T) {
 				{
 					"URL": "1",
 					"ParentType": "Dog",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Dog { name trained } }}",
 					"InsertionPoint": ["getAnimals"],
 					"Then": null
@@ -505,6 +566,7 @@ func TestInterfacePlanInlineSimple(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getUsers { __typename id name }}",
 			"InsertionPoint": null,
 			"Then": null
@@ -570,12 +632,14 @@ func TestInterfacePlanInlineComplex(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getUsers { __typename ... on BasicUser { id name } ... on OtherUser { id name } }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "1",
 					"ParentType": "BasicUser",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on BasicUser { files { id } } }}",
 					"InsertionPoint": ["getUsers"],
 					"Then": null
@@ -583,6 +647,7 @@ func TestInterfacePlanInlineComplex(t *testing.T) {
 				{
 					"URL": "1",
 					"ParentType": "OtherUser",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on OtherUser { files { id } } }}",
 					"InsertionPoint": ["getUsers"],
 					"Then": null
@@ -626,12 +691,14 @@ func TestInterfacePlanInlineComplexDifferentFields(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getUsers { __typename ... on BasicUser { id name } ... on OtherUser { id name phone } }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "1",
 					"ParentType": "BasicUser",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on BasicUser { files { id name } } }}",
 					"InsertionPoint": ["getUsers"],
 					"Then": null
@@ -677,12 +744,14 @@ func TestInterfacePlanInlineComplexOtherWay(t *testing.T) {
 		  {
 			"URL": "1",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getFiles { id name creator { __typename ... on BasicUser { id files { id name } } ... on OtherUser { id } } }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "0",
 					"ParentType": "BasicUser",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on BasicUser { name } }}",
 					"InsertionPoint": ["getFiles", "creator"],
 					"Then": null
@@ -690,6 +759,7 @@ func TestInterfacePlanInlineComplexOtherWay(t *testing.T) {
 				{
 					"URL": "0",
 					"ParentType": "OtherUser",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on OtherUser { name phone } }}",
 					"InsertionPoint": ["getFiles", "creator"],
 					"Then": null
@@ -734,30 +804,35 @@ func TestInterfacePlanInlineComplexThreeServices(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getUsers { __typename ... on BasicUser { id name } ... on OtherUser { id name } }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "1",
 					"ParentType": "BasicUser",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on BasicUser { files { id } } }}",
 					"InsertionPoint": ["getUsers"],
 					"Then": [
 						{
 							"URL": "2",
 							"ParentType": "File",
+							"OperationName": null,
 							"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on File { dims { id resolution file { id } } } }}",
 							"InsertionPoint": ["getUsers", "files"],
 							"Then": [
 								{
 									"URL": "1",
 									"ParentType": "File",
+									"OperationName": null,
 									"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on File { creator { __typename ... on BasicUser { id } ... on OtherUser { id } } } }}",
 									"InsertionPoint": ["getUsers", "files", "dims", "file"],
 									"Then": [
 										{
 											"URL": "0",
 											"ParentType": "BasicUser",
+											"OperationName": null,
 											"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on BasicUser { name } }}",
 											"InsertionPoint": ["getUsers", "files", "dims", "file", "creator"],
 											"Then": null
@@ -765,6 +840,7 @@ func TestInterfacePlanInlineComplexThreeServices(t *testing.T) {
 										{
 											"URL": "0",
 											"ParentType": "OtherUser",
+											"OperationName": null,
 											"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on OtherUser { name } }}",
 											"InsertionPoint": ["getUsers", "files", "dims", "file", "creator"],
 											"Then": null
@@ -778,24 +854,28 @@ func TestInterfacePlanInlineComplexThreeServices(t *testing.T) {
 				{
 					"URL": "1",
 					"ParentType": "OtherUser",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on OtherUser { files { id } } }}",
 					"InsertionPoint": ["getUsers"],
 					"Then": [
 						{
 							"URL": "2",
 							"ParentType": "File",
+							"OperationName": null,
 							"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on File { dims { id resolution file { id } } } }}",
 							"InsertionPoint": ["getUsers", "files"],
 							"Then": [
 								{
 									"URL": "1",
 									"ParentType": "File",
+									"OperationName": null,
 									"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on File { creator { __typename ... on BasicUser { id } ... on OtherUser { id } } } }}",
 									"InsertionPoint": ["getUsers", "files", "dims", "file"],
 									"Then": [
 										{
 											"URL": "0",
 											"ParentType": "BasicUser",
+											"OperationName": null,
 											"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on BasicUser { name } }}",
 											"InsertionPoint": ["getUsers", "files", "dims", "file", "creator"],
 											"Then": null
@@ -803,6 +883,7 @@ func TestInterfacePlanInlineComplexThreeServices(t *testing.T) {
 										{
 											"URL": "0",
 											"ParentType": "OtherUser",
+											"OperationName": null,
 											"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on OtherUser { name } }}",
 											"InsertionPoint": ["getUsers", "files", "dims", "file", "creator"],
 											"Then": null
@@ -931,6 +1012,7 @@ func TestIntrospection(t *testing.T) {
 		  {
 			"URL": "%s",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ __schema { queryType { name } mutationType { name } subscriptionType { name } types { kind name description fields(includeDeprecated: true) { name description args { name description type { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name } } } } } } } } defaultValue } type { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name } } } } } } } } isDeprecated deprecationReason } inputFields { name description type { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name } } } } } } } } defaultValue } interfaces { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name } } } } } } } } enumValues(includeDeprecated: true) { name description isDeprecated deprecationReason } possibleTypes { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name } } } } } } } } } directives { name description locations args { name description type { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name } } } } } } } } defaultValue } } }}",
 			"InsertionPoint": null,
 			"Then": null
@@ -952,12 +1034,14 @@ func TestPlanInnerArguments(t *testing.T) {
 		  {
 			"URL": "1",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getAuthors { id }}",
 			"InsertionPoint": null,
 			"Then": [
 				{
 					"URL": "0",
 					"ParentType": "Author",
+					"OperationName": null,
 					"SelectionSet": "query ($id: ID!, $lang: Language) { node(id: $id) { ... on Author { movies { id title(language: $lang) } } }}",
 					"InsertionPoint": ["getAuthors"],
 					"Then": null

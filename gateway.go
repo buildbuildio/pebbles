@@ -2,6 +2,7 @@ package pebbles
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -206,21 +207,27 @@ func (g *Gateway) queryHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			var operation *ast.OperationDefinition
-			if len(query.Operations) == 1 {
+			if request.OperationName != nil {
+				operation = query.Operations.ForName(*request.OperationName)
+			} else if len(query.Operations) == 1 && query.Operations[0].Name == "" {
 				operation = query.Operations[0]
-			} else {
-				operation = query.Operations.ForName(request.OperationName)
 			}
 
 			if operation == nil {
+				var err error
+				if request.OperationName != nil {
+					err = fmt.Errorf(
+						"unable to extract query for operation %s",
+						*request.OperationName,
+					)
+				} else {
+					err = errors.New("many queries provided, but no operationName")
+				}
 				return &Result{
 					Errors: gqlerrors.ErrorList{
 						gqlerrors.NewError(
 							gqlerrors.ValidationFailedError,
-							fmt.Errorf(
-								"unable to extract query for operation %s",
-								request.OperationName,
-							),
+							err,
 						),
 					},
 					Data: nil,

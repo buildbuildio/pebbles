@@ -16,7 +16,7 @@ type Request struct {
 	Original      *http.Request          `json:"-"`
 	Query         string                 `json:"query"`
 	Variables     map[string]interface{} `json:"variables"`
-	OperationName string                 `json:"operationName"`
+	OperationName *string                `json:"operationName"`
 }
 
 type File interface {

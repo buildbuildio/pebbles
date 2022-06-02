@@ -18,6 +18,7 @@ func TestCachedPlannerSimplePlan(t *testing.T) {
 		  {
 			"URL": "0",
 			"ParentType": "Query",
+			"OperationName": null,
 			"SelectionSet": "{ getMovies { id }}",
 			"InsertionPoint": null,
 			"Then": null

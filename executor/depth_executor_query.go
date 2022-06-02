@@ -90,11 +90,6 @@ func (de *DepthExecutor) executeRequests(ers []*ExecutionRequest) ([]*queryerRes
 		ExecutionRequests: make([]*ExecutionRequest, len(ers)),
 	}
 
-	operationName := "_operation"
-	if de.ctx.Request != nil {
-		operationName = de.ctx.Request.OperationName
-	}
-
 	for i, req := range ers {
 		variables, err := de.getVariables(req)
 		if err != nil {
@@ -104,7 +99,7 @@ func (de *DepthExecutor) executeRequests(ers []*ExecutionRequest) ([]*queryerRes
 		input := &requests.Request{
 			Query:         req.QueryPlanStep.QueryString,
 			Variables:     variables,
-			OperationName: operationName,
+			OperationName: req.QueryPlanStep.OperationName,
 		}
 		batchRequest.Inputs[i] = input
 		batchRequest.ExecutionRequests[i] = req

@@ -187,7 +187,7 @@ func TestMultiOpQueryerQueryFile(t *testing.T) {
 			defer req.Body.Close()
 			body, _ := ioutil.ReadAll(req.Body)
 			sbody := string(body)
-			ok := strings.Contains(sbody, `{"query":"{ called }","variables":{"someFile":null,"stringParam":"hello world"},"operationName":""}`) &&
+			ok := strings.Contains(sbody, `{"query":"{ called }","variables":{"someFile":null,"stringParam":"hello world"},"operationName":null}`) &&
 				strings.Contains(sbody, `Content-Disposition: form-data; name="operations"`) &&
 				strings.Contains(sbody, `{"0":["variables.someFile"]}`) &&
 				strings.Contains(sbody, `my file content`)

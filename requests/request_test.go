@@ -14,7 +14,7 @@ import (
 func TestParseSingleRequest(t *testing.T) {
 	buf := &bytes.Buffer{}
 
-	buf.WriteString(`{"operationName": "test", "query": "{ test }", "variables": null}`)
+	buf.WriteString(`{"operationName": "test", "query": "query test { test }", "variables": null}`)
 
 	r := httptest.NewRequest("POST", "/", buf)
 
@@ -25,7 +25,7 @@ func TestParseSingleRequest(t *testing.T) {
 
 	mustCheckEqual(t, actual, `{
 		"IsBatchMode": false, 
-		"Requests": [{"query": "{ test }", "operationName": "test", "variables": null}]
+		"Requests": [{"query": "query test { test }", "operationName": "test", "variables": null}]
 	}`)
 }
 
@@ -46,8 +46,8 @@ func TestParseMultipleRequests(t *testing.T) {
 	mustCheckEqual(t, actual, `{
 		"IsBatchMode": true, 
 		"Requests": [
-			{"query": "{ test }", "operationName": "", "variables": null},
-			{"query": "{ other }", "operationName": "", "variables": null}
+			{"query": "{ test }", "operationName": null, "variables": null},
+			{"query": "{ other }", "operationName": null, "variables": null}
 		]
 	}`)
 }
@@ -110,7 +110,7 @@ func TestParseFileSingleRequest(t *testing.T) {
 	mustCheckEqual(t, actual, `{
 		"IsBatchMode": false, 
 		"Requests": [
-			{"query": "mutation($file: Upload!) {singleUpload(file: $file) {id}}", "operationName": "", "variables": {}}
+			{"query": "mutation($file: Upload!) {singleUpload(file: $file) {id}}", "operationName": null, "variables": {}}
 		]
 	}`)
 }
@@ -177,7 +177,7 @@ func TestParseFileMultipleSingleRequest(t *testing.T) {
 	mustCheckEqual(t, actual, `{
 		"IsBatchMode": false, 
 		"Requests": [
-			{"query": "mutation($files: [Upload!]!) { multipleUpload(files: $files) { id } }", "operationName": "", "variables": {}}
+			{"query": "mutation($files: [Upload!]!) { multipleUpload(files: $files) { id } }", "operationName": null, "variables": {}}
 		]
 	}`)
 }
@@ -264,8 +264,8 @@ func TestParseFileMultipleRequests(t *testing.T) {
 	mustCheckEqual(t, actual, `{
 		"IsBatchMode": true, 
 		"Requests": [
-			{"query": "mutation ($file: Upload!) { singleUpload(file: $file) { id } }", "operationName": "", "variables": {}},
-			{"query": "mutation($files: [Upload!]!) { multipleUpload(files: $files) { id } }", "operationName": "", "variables": {}}
+			{"query": "mutation ($file: Upload!) { singleUpload(file: $file) { id } }", "operationName": null, "variables": {}},
+			{"query": "mutation($files: [Upload!]!) { multipleUpload(files: $files) { id } }", "operationName": null, "variables": {}}
 		]
 	}`)
 }

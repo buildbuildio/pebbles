@@ -19,8 +19,10 @@ import (
 
 var parallelExecutor ParallelExecutor
 
+var testOperationName string = "test"
+
 var testRequest = &requests.Request{
-	OperationName: "test",
+	OperationName: &testOperationName,
 	Variables:     nil,
 }
 
@@ -1050,8 +1052,8 @@ func TestExecutorQueryVariables(t *testing.T) {
 						// make sure that we got the right variable inputs
 						assert.Equal(t, map[string]interface{}{"hello": "world"}, input.Variables)
 						// and definitions
-						assert.Equal(t, "query ($hello: [String]) {\n\tvalues(filter: $hello)\n}", input.Query)
-						assert.Equal(t, "hoopla", input.OperationName)
+						assert.Equal(t, fmt.Sprintf("query %s ($hello: [String]) {\n\tvalues(filter: $hello)\n}", testOperationName), input.Query)
+						assert.Equal(t, testOperationName, *input.OperationName)
 						res = append(res, map[string]interface{}{"values": []string{"world"}})
 					}
 
@@ -1060,7 +1062,7 @@ func TestExecutorQueryVariables(t *testing.T) {
 			},
 		},
 		Request: &requests.Request{
-			OperationName: "hoopla",
+			OperationName: &testOperationName,
 			Variables:     fullVariables,
 		},
 		QueryPlan: &planner.QueryPlan{
@@ -1068,8 +1070,9 @@ func TestExecutorQueryVariables(t *testing.T) {
 				{
 					// this is equivalent to
 					// query { values (filter: $hello) }
-					URL:        "0",
-					ParentType: "Query",
+					URL:           "0",
+					ParentType:    "Query",
+					OperationName: &testOperationName,
 					SelectionSet: ast.SelectionSet{
 						&ast.Field{
 							Name: "values",

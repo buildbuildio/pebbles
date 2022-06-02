@@ -132,7 +132,7 @@ func TestGatewayPlannerError(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 
-	buf.WriteString(`{"operationName": "test", "query": "{ test }", "variables": null}`)
+	buf.WriteString(`{"operationName": "test", "query": "query test { test }", "variables": null}`)
 
 	r, err := http.NewRequest("POST", "localhost", buf)
 	assert.NoError(t, err)
@@ -172,7 +172,7 @@ func TestGatewayExecutorError(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 
-	buf.WriteString(`{"operationName": "test", "query": "{ test }", "variables": null}`)
+	buf.WriteString(`{"operationName": "test", "query": "query test { test }", "variables": null}`)
 
 	r, err := http.NewRequest("POST", "localhost", buf)
 	assert.NoError(t, err)
@@ -225,7 +225,7 @@ func TestGatewaySingleQuery(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 
-	buf.WriteString(`{"operationName": "test", "query": "{ test }", "variables": null}`)
+	buf.WriteString(`{"operationName": "test", "query": "query test { test }", "variables": null}`)
 
 	r, err := http.NewRequest("POST", "localhost", buf)
 	assert.NoError(t, err)
@@ -270,7 +270,7 @@ func TestGatewayMultipleQueries(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 
-	buf.WriteString(`[{"operationName": "test", "query": "{ test }", "variables": null}, {"operationName": "test", "query": "{ test }", "variables": null}]`)
+	buf.WriteString(`[{"operationName": "test", "query": "query test { test }", "variables": null}, {"operationName": "test", "query": "query test { test }", "variables": null}]`)
 
 	r, err := http.NewRequest("POST", "localhost", buf)
 	assert.NoError(t, err)
@@ -335,7 +335,7 @@ func TestGatewayIntrospectionQuery(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 
-	buf.WriteString(`{"operationName": "introspectionQuery", "query": "{ __schema {types {name}} }", "variables": null}`)
+	buf.WriteString(`{"operationName": "introspectionQuery", "query": "query introspectionQuery { __schema {types {name}} }", "variables": null}`)
 
 	r, err := http.NewRequest("POST", "localhost", buf)
 	assert.NoError(t, err)

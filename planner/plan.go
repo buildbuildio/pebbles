@@ -23,6 +23,7 @@ type QueryPlan struct {
 // Step is a single execution step
 type QueryPlanStep struct {
 	URL            string
+	OperationName  *string
 	ParentType     string
 	SelectionSet   ast.SelectionSet
 	InsertionPoint []string
@@ -39,12 +40,14 @@ func (s *QueryPlanStep) MarshalJSON() ([]byte, error) {
 		URL            string
 		ParentType     string
 		SelectionSet   string
+		OperationName  *string
 		InsertionPoint []string
 		Then           []*QueryPlanStep
 	}{
 		URL:            s.URL,
 		ParentType:     s.ParentType,
 		SelectionSet:   format.DebugFormatSelectionSetWithArgs(s.SelectionSet),
+		OperationName:  s.OperationName,
 		InsertionPoint: s.InsertionPoint,
 		Then:           s.Then,
 	})
@@ -62,19 +65,9 @@ func (s *QueryPlanStep) SetVariablesList() *QueryPlanStep {
 }
 
 func (s *QueryPlanStep) SetQuery() *QueryPlanStep {
-	s.QueryString = format.FormatSelectionSetWithArgs(s.SelectionSet)
+	s.QueryString = format.FormatSelectionSetWithArgs(s.SelectionSet, s.OperationName)
 	return s
 }
-
-// func (s *QueryPlanStep) GetVariablesList() []string {
-// 	args := lo.Uniq(getVariablesList(s.SelectionSet))
-
-// 	if len(args) == 0 {
-// 		return nil
-// 	}
-
-// 	return args
-// }
 
 func getVariablesList(s ast.SelectionSet) []string {
 	var args []string
@@ -91,17 +84,3 @@ func getVariablesList(s ast.SelectionSet) []string {
 	}
 	return args
 }
-
-// func (s *QueryPlanStep) GetQuery() string {
-// 	s.RLock()
-// 	if s.queryString != "" {
-// 		s.RUnlock()
-// 		return s.queryString
-// 	}
-// 	s.RUnlock()
-
-// 	s.Lock()
-
-// 	s.Unlock()
-// 	return s.queryString
-// }

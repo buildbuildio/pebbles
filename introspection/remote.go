@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/buildbuildio/pebbles/common"
 	"github.com/buildbuildio/pebbles/queryer"
@@ -14,6 +15,8 @@ import (
 	"github.com/vektah/gqlparser/v2/formatter"
 	"golang.org/x/exp/slices"
 )
+
+var introspectionQueryName string = "IntrospectionQuery"
 
 type RemoteSchemaIntrospector interface {
 	IntrospectRemoteSchemas(...string) ([]*ast.Schema, error)
@@ -60,7 +63,7 @@ func introspectRemoteSchema(factory QueryerFactory, url string) (*ast.Schema, er
 	queryer := factory(url)
 	resp, err := queryer.Query([]*requests.Request{{
 		Query:         introspectionQuery,
-		OperationName: "IntrospectionQuery",
+		OperationName: &introspectionQueryName,
 	}})
 	if err != nil {
 		return nil, err
@@ -467,8 +470,8 @@ type IntrospectionTypeRef struct {
 	OfType *IntrospectionTypeRef `json:"ofType"`
 }
 
-const introspectionQuery = `
-query IntrospectionQuery {
+var introspectionQuery = fmt.Sprintf(`
+query %s {
 	__schema {
 		queryType { name }
 		mutationType { name }
@@ -562,4 +565,4 @@ fragment TypeRef on __Type {
 		}
 	}
 }
-`
+`, introspectionQueryName)
