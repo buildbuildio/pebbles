@@ -235,3 +235,59 @@ var interfaceTum = merger.TypeURLMap{
 		IsImplementsNode: true,
 	},
 }
+
+var deepSchema = `
+	interface Node {
+		id: ID!
+	}
+
+	type Animal implements Node {
+		id: ID!
+		name: String!
+		species: Species!
+	}
+
+	type Species implements Node {
+		id: ID!
+		name: String!
+		genus: Genus!
+	}
+
+	type Genus implements Node {
+		id: ID!
+		name: String!
+	}
+
+	type Query {
+		getAnimals: [Animal!]!
+		node(id: ID!): Node
+	}
+`
+
+var deepTum = merger.TypeURLMap{
+	"Query": {
+		Fields: map[string]string{
+			"getAnimals": "0",
+		},
+	},
+	"Animal": {
+		Fields: map[string]string{
+			"name":    "0",
+			"species": "0",
+		},
+		IsImplementsNode: true,
+	},
+	"Species": {
+		Fields: map[string]string{
+			"name":  "1",
+			"genus": "1",
+		},
+		IsImplementsNode: true,
+	},
+	"Genus": {
+		Fields: map[string]string{
+			"name": "1",
+		},
+		IsImplementsNode: true,
+	},
+}

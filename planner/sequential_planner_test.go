@@ -408,6 +408,43 @@ func TestSimplePlanSpreadFragmentManyUsages(t *testing.T) {
 	assert.JSONEq(t, expected, actual)
 }
 
+func TestDeepPlan(t *testing.T) {
+	query := `{ getAnimals { __typename id name species {__typename id name genus {__typename id name}} }}`
+
+	actual, plan := mustRunPlanner(t, seqPlan, deepSchema, query, deepTum)
+
+	expected := `{
+		"RootSteps": [
+		  {
+			"URL": "0",
+			"ParentType": "Query",
+			"OperationName": null,
+			"SelectionSet": "{ getAnimals { __typename id name species { __typename id } }}",
+			"InsertionPoint": null,
+			"Then": [
+				{
+					"URL": "1",
+					"ParentType": "Species",
+					"OperationName": null,
+					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Species { name genus { __typename id name } } }}",
+					"InsertionPoint": ["getAnimals", "species"],
+					"Then": null
+				}
+			]
+		  }
+		],
+		"ScrubFields": null
+	  }`
+
+	assert.Equal(
+		t,
+		"query ($id: ID!) {\n\tnode(id: $id) {\n\t\t... on Species {\n\t\t\tname\n\t\t\tgenus {\n\t\t\t\t__typename\n\t\t\t\tid\n\t\t\t\tname\n\t\t\t}\n\t\t}\n\t}\n}",
+		plan.RootSteps[0].Then[0].QueryString,
+	)
+
+	assert.JSONEq(t, expected, actual)
+}
+
 func TestUnionPlanUnion(t *testing.T) {
 	query := `
 	{
@@ -1057,7 +1094,11 @@ func TestPlanInnerArguments(t *testing.T) {
 	assert.EqualValues(t, "{\n\tgetAuthors {\n\t\tid\n\t}\n}", plan.RootSteps[0].QueryString)
 	assert.Nil(t, plan.RootSteps[0].VariablesList)
 
-	assert.EqualValues(t, "query ($id: ID!, $lang: Language) {\n\tnode(id: $id) {\n\t\t... on Author {\n\t\t\tmovies {\n\t\t\t\tid\n\t\t\t\ttitle(language: $lang)\n\t\t\t}\n\t\t}\n\t}\n}", plan.RootSteps[0].Then[0].QueryString)
+	assert.EqualValues(
+		t,
+		"query ($id: ID!, $lang: Language) {\n\tnode(id: $id) {\n\t\t... on Author {\n\t\t\tmovies {\n\t\t\t\tid\n\t\t\t\ttitle(language: $lang)\n\t\t\t}\n\t\t}\n\t}\n}",
+		plan.RootSteps[0].Then[0].QueryString,
+	)
 	assert.Equal(t, []string{"id", "lang"}, plan.RootSteps[0].Then[0].VariablesList)
 
 }

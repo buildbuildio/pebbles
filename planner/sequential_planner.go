@@ -33,10 +33,12 @@ func (sp SequentialPlanner) Plan(ctx *PlanningContext) (*QueryPlan, error) {
 		return nil, err
 	}
 
-	return &QueryPlan{
+	qp := &QueryPlan{
 		RootSteps:   steps,
 		ScrubFields: sf,
-	}, nil
+	}
+
+	return qp.SetComputedValues(ctx), nil
 }
 
 func sanitizeSelectionSet(ctx *PlanningContext, selectionSet ast.SelectionSet, insertionPoint []string) (ast.SelectionSet, ScrubFields) {
@@ -155,13 +157,7 @@ func createQueryPlanSteps(ctx *PlanningContext, insertionPoint []string, parentT
 			SelectionSet:   selectionSetForLocation,
 		}
 
-		// set OperationName for root steps if provided
-		// by realization there're no operations in sub query
-		if ctx.Operation.Name != "" && len(insertionPoint) == 0 {
-			qps.OperationName = &ctx.Operation.Name
-		}
-
-		result = append(result, qps.SetQuery().SetVariablesList())
+		result = append(result, qps)
 	}
 	return result, nil
 }
@@ -523,7 +519,6 @@ func convertSelectionSetToNodeQuery(parentType string, selectionSet ast.Selectio
 //	 	}
 // }
 func addFieldToNodeQuery(parentType string, nodeQuery ast.SelectionSet, selection ast.Selection) (ast.SelectionSet, bool) {
-
 	if len(nodeQuery) == 0 {
 		return nil, false
 	}

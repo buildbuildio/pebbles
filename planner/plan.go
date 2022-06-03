@@ -20,6 +20,20 @@ type QueryPlan struct {
 	ScrubFields ScrubFields
 }
 
+func (qp *QueryPlan) SetComputedValues(ctx *PlanningContext) *QueryPlan {
+	for i, step := range qp.RootSteps {
+		// set OperationName for root steps if provided
+		// by realization there're no operations in sub query
+		if ctx.Operation.Name != "" && len(step.InsertionPoint) == 0 {
+			step.OperationName = &ctx.Operation.Name
+		}
+
+		qp.RootSteps[i] = step.SetComputedValues()
+	}
+
+	return qp
+}
+
 // Step is a single execution step
 type QueryPlanStep struct {
 	URL            string
@@ -53,7 +67,16 @@ func (s *QueryPlanStep) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (s *QueryPlanStep) SetVariablesList() *QueryPlanStep {
+// SetComputedValues sets VariablesList and Query for QueryPlanStep. It triggers SetComputedValues on child steps
+func (s *QueryPlanStep) SetComputedValues() *QueryPlanStep {
+	s = s.setVariablesList().setQuery()
+	for i, then := range s.Then {
+		s.Then[i] = then.SetComputedValues()
+	}
+	return s
+}
+
+func (s *QueryPlanStep) setVariablesList() *QueryPlanStep {
 	args := lo.Uniq(getVariablesList(s.SelectionSet))
 
 	if len(args) == 0 {
@@ -64,7 +87,7 @@ func (s *QueryPlanStep) SetVariablesList() *QueryPlanStep {
 	return s
 }
 
-func (s *QueryPlanStep) SetQuery() *QueryPlanStep {
+func (s *QueryPlanStep) setQuery() *QueryPlanStep {
 	s.QueryString = format.FormatSelectionSetWithArgs(s.SelectionSet, s.OperationName)
 	return s
 }

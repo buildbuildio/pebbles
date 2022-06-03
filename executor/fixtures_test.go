@@ -83,7 +83,12 @@ func selectionSetWithNodeDef(s ast.SelectionSet) ast.SelectionSet {
 }
 
 func mustCheckEqual(t *testing.T, ctx *ExecutionContext, expected string) {
-	walkSetQueryPlanArtifacts(ctx.QueryPlan.RootSteps)
+	pc := &planner.PlanningContext{
+		Operation: &ast.OperationDefinition{
+			Name: *ctx.Request.OperationName,
+		},
+	}
+	ctx.QueryPlan = ctx.QueryPlan.SetComputedValues(pc)
 	result, err := parallelExecutor.Execute(ctx)
 	require.NoError(t, err, "Encountered error executing plan")
 
@@ -91,13 +96,4 @@ func mustCheckEqual(t *testing.T, ctx *ExecutionContext, expected string) {
 	require.NoError(t, err, "Encountered error marshalling response")
 
 	assert.JSONEq(t, expected, string(b))
-}
-
-func walkSetQueryPlanArtifacts(qps []*planner.QueryPlanStep) {
-	for _, qp := range qps {
-		qp.SetQuery().SetVariablesList()
-		if qp.Then != nil {
-			walkSetQueryPlanArtifacts(qp.Then)
-		}
-	}
 }

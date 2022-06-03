@@ -1052,7 +1052,7 @@ func TestExecutorQueryVariables(t *testing.T) {
 						// make sure that we got the right variable inputs
 						assert.Equal(t, map[string]interface{}{"hello": "world"}, input.Variables)
 						// and definitions
-						assert.Equal(t, fmt.Sprintf("query %s ($hello: [String]) {\n\tvalues(filter: $hello)\n}", testOperationName), input.Query)
+						assert.Equal(t, fmt.Sprintf("query %s($hello: [String]) {\n\tvalues(filter: $hello)\n}", testOperationName), input.Query)
 						assert.Equal(t, testOperationName, *input.OperationName)
 						res = append(res, map[string]interface{}{"values": []string{"world"}})
 					}
