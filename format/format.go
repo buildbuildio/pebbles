@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -13,35 +12,114 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
-type Formatter interface {
-	FormatSelectionSet(sets ast.SelectionSet)
+type BufferedFormatter struct {
+	*Formatter
 }
 
-func NewFormatter(w io.Writer) Formatter {
-	return &formatter{
-		indent: "\t",
-		writer: w,
+func NewBufferedFormatter() *BufferedFormatter {
+	return &BufferedFormatter{
+		Formatter: NewFormatter(),
 	}
 }
 
-type formatter struct {
+func NewDebugBufferedFormatter() *BufferedFormatter {
+	return &BufferedFormatter{
+		Formatter: NewFormatter().WithIndent("").WithNewLine(" "),
+	}
+}
+
+func (f *BufferedFormatter) WithNewLine(newLine string) *BufferedFormatter {
+	f.Formatter.WithNewLine(newLine)
+	return f
+}
+
+func (f *BufferedFormatter) WithIndent(indent string) *BufferedFormatter {
+	f.Formatter.WithIndent(indent)
+	return f
+}
+
+func (f *BufferedFormatter) WithOperationName(operationName string) *BufferedFormatter {
+	f.Formatter.WithOperationName(operationName)
+	return f
+}
+
+func (f *BufferedFormatter) WithSchema(schema *ast.Schema) *BufferedFormatter {
+	f.Formatter.WithSchema(schema)
+	return f
+}
+
+func (f *BufferedFormatter) Copy() *BufferedFormatter {
+
+	return &BufferedFormatter{
+		Formatter: f.Formatter.Copy(),
+	}
+}
+
+func (f *BufferedFormatter) FormatSelectionSet(sets ast.SelectionSet) string {
+	buf := &bytes.Buffer{}
+	defer buf.Reset()
+	f.Formatter.WithWriter(buf).FormatSelectionSet(sets)
+
+	return buf.String()
+}
+
+func NewFormatter() *Formatter {
+	return &Formatter{
+		indent:  "\t",
+		newLine: "\n",
+	}
+}
+
+type Formatter struct {
 	writer io.Writer
 
-	indent      string
-	indentSize  int
-	emitBuiltin bool
+	indent        string
+	newLine       string
+	indentSize    int
+	operationName *string
+	schema        *ast.Schema
 
 	padNext  bool
 	lineHead bool
 }
 
-func (f *formatter) writeString(s string) {
+func (f *Formatter) WithWriter(w io.Writer) *Formatter {
+	f.writer = w
+	return f
+}
+
+func (f *Formatter) WithNewLine(newLine string) *Formatter {
+	f.newLine = newLine
+	return f
+}
+
+func (f *Formatter) WithIndent(indent string) *Formatter {
+	f.indent = indent
+	return f
+}
+
+func (f *Formatter) WithOperationName(operationName string) *Formatter {
+	f.operationName = &operationName
+	return f
+}
+
+func (f *Formatter) WithSchema(schema *ast.Schema) *Formatter {
+	f.schema = schema
+	return f
+}
+
+func (f *Formatter) Copy() *Formatter {
+	tmp := *f
+	return &tmp
+}
+
+func (f *Formatter) write(s string) {
 	_, _ = f.writer.Write([]byte(s))
 }
 
-func (f *formatter) writeIndent() *formatter {
+func (f *Formatter) writeIndent() *Formatter {
 	if f.lineHead {
-		f.writeString(strings.Repeat(f.indent, f.indentSize))
+		f.write(strings.Repeat(f.indent, f.indentSize))
 	}
 	f.lineHead = false
 	f.padNext = false
@@ -49,222 +127,130 @@ func (f *formatter) writeIndent() *formatter {
 	return f
 }
 
-func (f *formatter) WriteNewline() *formatter {
-	f.writeString("\n")
+func (f *Formatter) writeNewLine() *Formatter {
+	f.write(f.newLine)
 	f.lineHead = true
 	f.padNext = false
 
 	return f
 }
 
-func (f *formatter) WriteWord(word string) *formatter {
+func (f *Formatter) writeWord(word string) *Formatter {
 	if f.lineHead {
 		f.writeIndent()
 	}
 	if f.padNext {
-		f.writeString(" ")
+		f.write(" ")
 	}
-	f.writeString(strings.TrimSpace(word))
+	f.write(strings.TrimSpace(word))
 	f.padNext = true
 
 	return f
 }
 
-func (f *formatter) WriteString(s string) *formatter {
+func (f *Formatter) writeString(s string) *Formatter {
 	if f.lineHead {
 		f.writeIndent()
 	}
 	if f.padNext {
-		f.writeString(" ")
+		f.write(" ")
 	}
-	f.writeString(s)
+	f.write(s)
 	f.padNext = false
 
 	return f
 }
 
-func (f *formatter) IncrementIndent() {
+func (f *Formatter) incrementIndent() {
 	f.indentSize++
 }
 
-func (f *formatter) DecrementIndent() {
+func (f *Formatter) decrementIndent() {
 	f.indentSize--
 }
 
-func (f *formatter) NoPadding() *formatter {
+func (f *Formatter) noPadding() *Formatter {
 	f.padNext = false
 
 	return f
 }
 
-func (f *formatter) NeedPadding() *formatter {
+func (f *Formatter) needPadding() *Formatter {
 	f.padNext = true
 
 	return f
 }
 
-func (f *formatter) FormatDirectiveList(lists ast.DirectiveList) {
+func (f *Formatter) formatDirectiveList(lists ast.DirectiveList) {
 	if len(lists) == 0 {
 		return
 	}
 
 	for _, dir := range lists {
-		f.FormatDirective(dir)
+		f.formatDirective(dir)
 	}
 }
 
-func (f *formatter) FormatDirective(dir *ast.Directive) {
-	f.WriteString("@").WriteWord(dir.Name)
-	f.FormatArgumentList(dir.Arguments)
+func (f *Formatter) formatDirective(dir *ast.Directive) {
+	f.writeString("@").writeWord(dir.Name)
+	f.formatArgumentList(dir.Arguments)
 }
 
-func (f *formatter) FormatArgumentList(lists ast.ArgumentList) {
+func (f *Formatter) formatArgumentList(lists ast.ArgumentList) {
 	if len(lists) == 0 {
 		return
 	}
-	f.NoPadding().WriteString("(")
+	f.noPadding().writeString("(")
 	for idx, arg := range lists {
-		f.FormatArgument(arg)
+		f.formatArgument(arg)
 
 		if idx != len(lists)-1 {
-			f.NoPadding().WriteWord(",")
+			f.noPadding().writeWord(",")
 		}
 	}
-	f.WriteString(")").NeedPadding()
+	f.writeString(")").needPadding()
 }
 
-func (f *formatter) FormatArgument(arg *ast.Argument) {
-	f.WriteWord(arg.Name).NoPadding().WriteString(":").NeedPadding()
-	f.WriteString(arg.Value.String())
+func (f *Formatter) formatArgument(arg *ast.Argument) {
+	f.writeWord(arg.Name).noPadding().writeString(":").needPadding()
+	f.writeString(arg.Value.String())
 }
 
-func (f *formatter) FormatSelectionSet(sets ast.SelectionSet) {
-	if len(sets) == 0 {
-		return
-	}
-
-	f.WriteString("{").WriteNewline()
-	f.IncrementIndent()
-
-	for _, sel := range sets {
-		f.FormatSelection(sel)
-	}
-
-	f.DecrementIndent()
-	f.WriteString("}")
-}
-
-func (f *formatter) FormatSelection(selection ast.Selection) {
-	switch v := selection.(type) {
-	case *ast.Field:
-		f.FormatField(v)
-
-	case *ast.FragmentSpread:
-		f.FormatFragmentSpread(v)
-
-	case *ast.InlineFragment:
-		f.FormatInlineFragment(v)
-
-	default:
-		panic(fmt.Errorf("unknown Selection type: %T", selection))
-	}
-
-	f.WriteNewline()
-}
-
-func (f *formatter) FormatField(field *ast.Field) {
-	if field.Alias != "" && field.Alias != field.Name {
-		f.WriteWord(field.Alias).NoPadding().WriteString(":").NeedPadding()
-	}
-	f.WriteWord(field.Name)
-
-	if len(field.Arguments) != 0 {
-		f.NoPadding()
-		f.FormatArgumentList(field.Arguments)
-		f.NeedPadding()
-	}
-
-	f.FormatDirectiveList(field.Directives)
-
-	f.FormatSelectionSet(field.SelectionSet)
-}
-
-func (f *formatter) FormatFragmentSpread(spread *ast.FragmentSpread) {
-	f.WriteWord("...").WriteWord(spread.Name)
-
-	f.FormatDirectiveList(spread.Directives)
-
-	f.FormatSelectionSet(spread.Definition.SelectionSet)
-}
-
-func (f *formatter) FormatInlineFragment(inline *ast.InlineFragment) {
-	f.WriteWord("...")
-	if inline.TypeCondition != "" {
-		f.WriteWord("on").WriteWord(inline.TypeCondition)
-	}
-
-	f.FormatDirectiveList(inline.Directives)
-
-	f.FormatSelectionSet(inline.SelectionSet)
-}
-
-func DebugFormatSelectionSetWithArgs(s ast.SelectionSet) string {
-	v := FormatSelectionSetWithArgs(s, nil)
-
-	v = strings.ReplaceAll(v, "\t", " ")
-	v = strings.ReplaceAll(v, "\n", "")
-	space := regexp.MustCompile(`\s+`)
-	v = space.ReplaceAllString(v, " ")
-
-	return v
-}
-
-func FormatSelectionSetWithArgs(s ast.SelectionSet, operationName *string) string {
-	buf := bytes.NewBufferString("")
-	defer buf.Reset()
-	f := NewFormatter(buf)
-	f.FormatSelectionSet(s)
-	v := buf.String()
-
-	args := walkArgumentList(s)
-
-	if len(args) == 0 {
-		if operationName != nil {
-			return fmt.Sprintf("query %s %s", *operationName, v)
-		}
-		return v
-	}
-
-	var tuples []string
-	for argName, argType := range args {
-		tuples = append(tuples, fmt.Sprintf("$%s: %s", argName, argType))
-	}
-	// persistant order
-	sort.Strings(tuples)
-
-	argList := strings.Join(tuples, ", ")
-
-	if operationName != nil {
-		return fmt.Sprintf("query %s(%s) %s", *operationName, argList, v)
-	}
-
-	return fmt.Sprintf("query (%s) %s", argList, v)
-}
-
-func walkArgumentList(s ast.SelectionSet) map[string]string {
+func (f *Formatter) walkArgumentList(s ast.SelectionSet) map[string]string {
 	res := make(map[string]string)
-	for _, f := range common.SelectionSetToFields(s, nil) {
-		for _, a := range f.Arguments {
-			if a.Value != nil && a.Value.Kind == ast.Variable && f.Definition != nil && f.Definition.Arguments != nil {
-				ad := f.Definition.Arguments.ForName(a.Name)
-				if ad == nil {
+	for _, field := range common.SelectionSetToFields(s, nil) {
+		for _, a := range field.Arguments {
+			if field.Definition == nil || field.Definition.Arguments == nil {
+				break
+			}
+
+			if a.Value == nil {
+				continue
+			}
+
+			ad := field.Definition.Arguments.ForName(a.Name)
+			if ad == nil {
+				continue
+			}
+
+			if len(a.Value.Children) > 0 && f.schema != nil {
+				typeDef, ok := f.schema.Types[ad.Type.Name()]
+				if !ok {
 					continue
 				}
+
+				for k, v := range f.walkChildrenArgumentList(typeDef, a.Value.Children) {
+					res[k] = v
+				}
+				continue
+			}
+
+			if a.Value.Kind == ast.Variable {
 				res[a.Value.Raw] = ad.Type.String()
 			}
 		}
-		if f.SelectionSet != nil {
-			stepRes := walkArgumentList(f.SelectionSet)
+		if field.SelectionSet != nil {
+			stepRes := f.walkArgumentList(field.SelectionSet)
 			for k, v := range stepRes {
 				res[k] = v
 			}
@@ -272,4 +258,140 @@ func walkArgumentList(s ast.SelectionSet) map[string]string {
 	}
 
 	return res
+}
+
+func (f *Formatter) walkChildrenArgumentList(typeDef *ast.Definition, childs ast.ChildValueList) map[string]string {
+	res := make(map[string]string)
+	if f.schema == nil {
+		return res
+	}
+
+	for _, ch := range childs {
+		if ch.Value == nil {
+			continue
+		}
+
+		if len(ch.Value.Children) > 0 && ch.Value.Definition != nil {
+			chTypeDef, ok := f.schema.Types[ch.Value.Definition.Name]
+			if !ok {
+				continue
+			}
+			for k, v := range f.walkChildrenArgumentList(chTypeDef, ch.Value.Children) {
+				res[k] = v
+			}
+			continue
+		}
+
+		if ch.Value.Kind == ast.Variable {
+			ad := typeDef.Fields.ForName(ch.Name)
+			if ad == nil {
+				continue
+			}
+			res[ch.Value.Raw] = ad.Type.String()
+		}
+	}
+	return res
+}
+
+func (f *Formatter) formatSelectionSet(sets ast.SelectionSet) {
+	if len(sets) == 0 {
+		return
+	}
+
+	f.writeString("{").writeNewLine()
+	f.incrementIndent()
+
+	for _, sel := range sets {
+		f.formatSelection(sel)
+	}
+
+	f.decrementIndent()
+	f.writeString("}")
+}
+
+func (f *Formatter) formatSelection(selection ast.Selection) {
+	switch v := selection.(type) {
+	case *ast.Field:
+		f.formatField(v)
+
+	case *ast.FragmentSpread:
+		f.formatFragmentSpread(v)
+
+	case *ast.InlineFragment:
+		f.formatInlineFragment(v)
+
+	default:
+		panic(fmt.Errorf("unknown Selection type: %T", selection))
+	}
+
+	f.writeNewLine()
+}
+
+func (f *Formatter) formatField(field *ast.Field) {
+	if field.Alias != "" && field.Alias != field.Name {
+		f.writeWord(field.Alias).noPadding().writeString(":").needPadding()
+	}
+	f.writeWord(field.Name)
+
+	if len(field.Arguments) != 0 {
+		f.noPadding()
+		f.formatArgumentList(field.Arguments)
+		f.needPadding()
+	}
+
+	f.formatDirectiveList(field.Directives)
+
+	f.formatSelectionSet(field.SelectionSet)
+}
+
+func (f *Formatter) formatFragmentSpread(spread *ast.FragmentSpread) {
+	f.writeWord("...").writeWord(spread.Name)
+
+	f.formatDirectiveList(spread.Directives)
+
+	f.formatSelectionSet(spread.Definition.SelectionSet)
+}
+
+func (f *Formatter) formatInlineFragment(inline *ast.InlineFragment) {
+	f.writeWord("...")
+	if inline.TypeCondition != "" {
+		f.writeWord("on").writeWord(inline.TypeCondition)
+	}
+
+	f.formatDirectiveList(inline.Directives)
+
+	f.formatSelectionSet(inline.SelectionSet)
+}
+
+func (f *Formatter) FormatSelectionSet(sets ast.SelectionSet) {
+	if len(sets) == 0 {
+		return
+	}
+
+	args := f.walkArgumentList(sets)
+
+	if len(args) == 0 {
+		if f.operationName != nil {
+			f.writeWord("query").writeWord(*f.operationName)
+		}
+	} else {
+		var tuples []string
+		for argName, argType := range args {
+			tuples = append(tuples, fmt.Sprintf("$%s: %s", argName, argType))
+		}
+		// persistant order
+		sort.Strings(tuples)
+
+		argList := strings.Join(tuples, ", ")
+
+		f.writeWord("query")
+
+		if f.operationName != nil {
+			f.writeString(*f.operationName)
+		}
+
+		f.writeWord("(" + argList + ")")
+	}
+
+	f.formatSelectionSet(sets)
 }

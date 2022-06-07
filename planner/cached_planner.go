@@ -37,7 +37,7 @@ func (cp *CachedPlanner) WithExecutor(e Planner) {
 }
 
 func (cp *CachedPlanner) hash(ctx *PlanningContext) hashKey {
-	s := format.FormatSelectionSetWithArgs(ctx.Operation.SelectionSet, nil)
+	s := format.NewBufferedFormatter().FormatSelectionSet(ctx.Operation.SelectionSet)
 	sha1 := sha1.Sum([]byte(s))
 	return sha1
 }

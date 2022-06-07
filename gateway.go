@@ -314,10 +314,9 @@ func (g *Gateway) parseIntrospectionQuery(plan *planner.QueryPlan, request *requ
 func (g *Gateway) getQueryers(planningCtx *planner.PlanningContext, planSteps []*planner.QueryPlanStep) map[string]queryer.Queryer {
 	queryers := make(map[string]queryer.Queryer)
 	for _, ps := range planSteps {
-		if _, ok := queryers[ps.URL]; ok {
-			continue
+		if _, ok := queryers[ps.URL]; !ok {
+			queryers[ps.URL] = g.queryerFactory(planningCtx, ps.URL)
 		}
-		queryers[ps.URL] = g.queryerFactory(planningCtx, ps.URL)
 
 		if ps.Then != nil {
 			childQueryers := g.getQueryers(planningCtx, ps.Then)

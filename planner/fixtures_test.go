@@ -291,3 +291,64 @@ var deepTum = merger.TypeURLMap{
 		IsImplementsNode: true,
 	},
 }
+
+var extendSchema = `
+	interface Node {
+		id: ID!
+	}
+
+	type User implements Node {
+		id: ID!
+		name: String!
+		ownedCompany: Company!
+		workingAs: Employee!
+		
+	}
+
+	type Company implements Node {
+		id: ID!
+		name: String!
+		employees: [Employee!]!
+	}
+
+	type Employee implements Node {
+		id: ID!
+		user: User!
+		name: String!
+	}
+
+	type Query {
+		getUsers: [User!]!
+		node(id: ID!): Node
+	}
+`
+
+var extendTum = merger.TypeURLMap{
+	"Query": {
+		Fields: map[string]string{
+			"getUsers": "0",
+		},
+	},
+	"User": {
+		Fields: map[string]string{
+			"name":         "0",
+			"ownedCompany": "1",
+			"workingAs":    "1",
+		},
+		IsImplementsNode: true,
+	},
+	"Company": {
+		Fields: map[string]string{
+			"name":      "1",
+			"employees": "1",
+		},
+		IsImplementsNode: true,
+	},
+	"Employee": {
+		Fields: map[string]string{
+			"name": "1",
+			"user": "1",
+		},
+		IsImplementsNode: true,
+	},
+}

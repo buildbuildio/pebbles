@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/buildbuildio/pebbles/common"
+	"github.com/buildbuildio/pebbles/format"
 
 	"github.com/samber/lo"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -155,6 +156,8 @@ func createQueryPlanSteps(ctx *PlanningContext, insertionPoint []string, parentT
 			URL:            location,
 			ParentType:     parentType,
 			SelectionSet:   selectionSetForLocation,
+
+			formatter: format.NewBufferedFormatter().WithSchema(ctx.Schema),
 		}
 
 		result = append(result, qps)
@@ -211,12 +214,28 @@ func extractSelectionSet(ctx *PlanningContext, insertionPoint []string, parentTy
 				mergedWithExistingStep := false
 				for _, step := range childrenStepsResult {
 					if step.URL == loc && common.IsEqual(step.InsertionPoint, insertionPoint) {
+						modifiedSelection := *selection
+						if selection.SelectionSet != nil {
+							selectionSet, childrenSteps, err := extractSelectionSet(
+								ctx,
+								append(insertionPoint, selection.Alias),
+								selection.Definition.Type.Name(),
+								selection.SelectionSet,
+								step.URL,
+							)
+							if err != nil {
+								return nil, nil, err
+							}
+
+							modifiedSelection.SelectionSet = selectionSet
+							step.Then = append(step.Then, childrenSteps...)
+						}
 						// add to node query
-						s, ok := addFieldToNodeQuery(parentType, step.SelectionSet, selection)
+						s, ok := addFieldToNodeQuery(parentType, step.SelectionSet, &modifiedSelection)
 						if ok {
 							step.SelectionSet = s
 						} else {
-							step.SelectionSet = append(step.SelectionSet, selection)
+							step.SelectionSet = append(step.SelectionSet, &modifiedSelection)
 						}
 
 						mergedWithExistingStep = true

@@ -12,9 +12,12 @@ import (
 	"github.com/buildbuildio/pebbles/executor"
 	"github.com/buildbuildio/pebbles/planner"
 	"github.com/buildbuildio/pebbles/playground"
+	"github.com/buildbuildio/pebbles/queryer"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
+	"golang.org/x/exp/slices"
 )
 
 type MockRemoteSchemaIntrospector struct {
@@ -41,6 +44,37 @@ type MockExecutor struct {
 
 func (me *MockExecutor) Execute(*executor.ExecutionContext) (map[string]interface{}, error) {
 	return me.Res, me.Error
+}
+
+func TestGatewayGetQueryers(t *testing.T) {
+	factory := func(pc *planner.PlanningContext, s string) queryer.Queryer {
+		return nil
+	}
+	gw := &Gateway{
+		queryerFactory: factory,
+	}
+
+	ps := []*planner.QueryPlanStep{{
+		URL: "1",
+		Then: []*planner.QueryPlanStep{{
+			URL: "2",
+		}, {
+			URL: "3",
+		}},
+	}, {
+		URL: "2",
+	}, {
+		URL: "2",
+		Then: []*planner.QueryPlanStep{{
+			URL: "4",
+		}},
+	}}
+
+	queryers := gw.getQueryers(nil, ps)
+
+	keys := lo.Keys(queryers)
+	slices.Sort(keys)
+	assert.EqualValues(t, []string{"1", "2", "3", "4"}, keys)
 }
 
 func TestGatewayMissingQueryError(t *testing.T) {
