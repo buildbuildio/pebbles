@@ -22,13 +22,7 @@ type QueryPlan struct {
 
 func (qp *QueryPlan) SetComputedValues(ctx *PlanningContext) *QueryPlan {
 	for i, step := range qp.RootSteps {
-		// set OperationName for root steps if provided
-		// by realization there're no operations in sub query
-		if ctx.Operation.Name != "" && len(step.InsertionPoint) == 0 {
-			step.OperationName = &ctx.Operation.Name
-		}
-
-		qp.RootSteps[i] = step.SetComputedValues()
+		qp.RootSteps[i] = step.SetComputedValues(ctx)
 	}
 
 	return qp
@@ -71,10 +65,23 @@ func (s *QueryPlanStep) MarshalJSON() ([]byte, error) {
 }
 
 // SetComputedValues sets VariablesList and Query for QueryPlanStep. It triggers SetComputedValues on child steps
-func (s *QueryPlanStep) SetComputedValues() *QueryPlanStep {
+func (s *QueryPlanStep) SetComputedValues(ctx *PlanningContext) *QueryPlanStep {
+	if s.formatter == nil {
+		s.formatter = format.NewBufferedFormatter().WithSchema(ctx.Schema)
+	}
+	// set OperationName and OperationType for root steps if provided
+	// by realization there're no operations in sub query and they're all queries
+	if len(s.InsertionPoint) == 0 {
+		s.formatter.WithOperationType(ctx.Operation.Operation)
+		if ctx.Operation.Name != "" {
+			s.formatter.WithOperationName(ctx.Operation.Name)
+			s.OperationName = &ctx.Operation.Name
+		}
+	}
+
 	s = s.setVariablesList().setQuery()
 	for i, then := range s.Then {
-		s.Then[i] = then.SetComputedValues()
+		s.Then[i] = then.SetComputedValues(ctx)
 	}
 	return s
 }
@@ -91,13 +98,6 @@ func (s *QueryPlanStep) setVariablesList() *QueryPlanStep {
 }
 
 func (s *QueryPlanStep) setQuery() *QueryPlanStep {
-	if s.formatter == nil {
-		// fallback for test case scenario
-		s.formatter = format.NewBufferedFormatter()
-	}
-	if s.OperationName != nil {
-		s.formatter.WithOperationName(*s.OperationName)
-	}
 	s.QueryString = s.formatter.FormatSelectionSet(s.SelectionSet)
 	return s
 }

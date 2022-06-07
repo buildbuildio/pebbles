@@ -85,7 +85,8 @@ func selectionSetWithNodeDef(s ast.SelectionSet) ast.SelectionSet {
 func mustCheckEqual(t *testing.T, ctx *ExecutionContext, expected string) {
 	pc := &planner.PlanningContext{
 		Operation: &ast.OperationDefinition{
-			Name: *ctx.Request.OperationName,
+			Name:      *ctx.Request.OperationName,
+			Operation: ast.Query,
 		},
 	}
 	ctx.QueryPlan = ctx.QueryPlan.SetComputedValues(pc)

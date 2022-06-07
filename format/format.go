@@ -43,6 +43,11 @@ func (f *BufferedFormatter) WithOperationName(operationName string) *BufferedFor
 	return f
 }
 
+func (f *BufferedFormatter) WithOperationType(operationType ast.Operation) *BufferedFormatter {
+	f.Formatter.WithOperationType(operationType)
+	return f
+}
+
 func (f *BufferedFormatter) WithSchema(schema *ast.Schema) *BufferedFormatter {
 	f.Formatter.WithSchema(schema)
 	return f
@@ -65,8 +70,9 @@ func (f *BufferedFormatter) FormatSelectionSet(sets ast.SelectionSet) string {
 
 func NewFormatter() *Formatter {
 	return &Formatter{
-		indent:  "\t",
-		newLine: "\n",
+		indent:        "\t",
+		newLine:       "\n",
+		operationType: ast.Query,
 	}
 }
 
@@ -77,6 +83,7 @@ type Formatter struct {
 	newLine       string
 	indentSize    int
 	operationName *string
+	operationType ast.Operation
 	schema        *ast.Schema
 
 	padNext  bool
@@ -100,6 +107,11 @@ func (f *Formatter) WithIndent(indent string) *Formatter {
 
 func (f *Formatter) WithOperationName(operationName string) *Formatter {
 	f.operationName = &operationName
+	return f
+}
+
+func (f *Formatter) WithOperationType(operationType ast.Operation) *Formatter {
+	f.operationType = operationType
 	return f
 }
 
@@ -372,7 +384,9 @@ func (f *Formatter) FormatSelectionSet(sets ast.SelectionSet) {
 
 	if len(args) == 0 {
 		if f.operationName != nil {
-			f.writeWord("query").writeWord(*f.operationName)
+			f.writeWord(string(f.operationType)).writeWord(*f.operationName)
+		} else if f.operationType != ast.Query {
+			f.writeWord(string(f.operationType))
 		}
 	} else {
 		var tuples []string
@@ -384,7 +398,7 @@ func (f *Formatter) FormatSelectionSet(sets ast.SelectionSet) {
 
 		argList := strings.Join(tuples, ", ")
 
-		f.writeWord("query")
+		f.writeWord(string(f.operationType))
 
 		if f.operationName != nil {
 			f.writeString(*f.operationName)

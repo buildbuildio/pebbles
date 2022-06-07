@@ -56,12 +56,17 @@ func TestFormatSelectionSet(t *testing.T) {
 		},
 	}
 
-	res := testFormatter.FormatSelectionSet(s)
+	expected := []string{`{ node { id } }`, `mutation { node { id } }`, `subscription { node { id } }`}
+	opTypes := []ast.Operation{ast.Query, ast.Mutation, ast.Subscription}
 
-	assert.Equal(t, `{ node { id } }`, res)
+	for i, exp := range expected {
+		res := testFormatter.Copy().WithOperationType(opTypes[i]).FormatSelectionSet(s)
+
+		assert.Equal(t, exp, res)
+	}
 }
 
-func TestFormatWithArgsNoArgsWithOperationName(t *testing.T) {
+func TestFormatSelectionSetWithOperationName(t *testing.T) {
 	s := ast.SelectionSet{
 		&ast.Field{
 			Name: common.NodeFieldName,
@@ -83,7 +88,7 @@ func TestFormatWithArgsNoArgsWithOperationName(t *testing.T) {
 	assert.Equal(t, "query getNode { node { id } }", res)
 }
 
-func TestFormatWithArgs(t *testing.T) {
+func TestFormatSelectionSetWithArgs(t *testing.T) {
 	s := ast.SelectionSet{
 		&ast.Field{
 			Name: common.NodeFieldName,
@@ -119,7 +124,7 @@ func TestFormatWithArgs(t *testing.T) {
 	assert.Equal(t, `query ($id: ID!) { node(id: $id) { id } }`, res)
 }
 
-func TestFormatWithArgsChildrenArgumentList(t *testing.T) {
+func TestFormatSelectionSetChildrenArgumentList(t *testing.T) {
 	s := ast.SelectionSet{
 		&ast.Field{
 			Name: common.NodeFieldName,
@@ -197,7 +202,7 @@ func TestFormatWithArgsChildrenArgumentList(t *testing.T) {
 	assert.Equal(t, `query ($id: ID!) { node(filterOptions: {nested:{id:$id}}) { id } }`, res)
 }
 
-func TestFormatWithArgsWithOperationName(t *testing.T) {
+func TestFormatSelectionSetWithArgsWithOperationName(t *testing.T) {
 	s := ast.SelectionSet{
 		&ast.Field{
 			Name: common.NodeFieldName,
@@ -234,7 +239,7 @@ func TestFormatWithArgsWithOperationName(t *testing.T) {
 	assert.Equal(t, "query getNode($id: ID!) { node(id: $id) { id } }", res)
 }
 
-func TestFormatWithArgsComplex(t *testing.T) {
+func TestFormatSelectionSetComplex(t *testing.T) {
 	s := ast.SelectionSet{
 		&ast.Field{
 			Name: common.NodeFieldName,
@@ -299,7 +304,7 @@ func TestFormatWithArgsComplex(t *testing.T) {
 	assert.Equal(t, `query ($id: ID!, $test: String!) { node(id: $id) { id { test(test: $test) { test } } } }`, res)
 }
 
-func TestFormatWithArgsPersistentOrder(t *testing.T) {
+func TestFormatSelectionSetPersistentOrder(t *testing.T) {
 	s := ast.SelectionSet{
 		&ast.Field{
 			Name: common.NodeFieldName,
@@ -359,7 +364,7 @@ func TestFormatWithArgsPersistentOrder(t *testing.T) {
 
 }
 
-func TestFormatWithArgsInline(t *testing.T) {
+func TestFormatSelectionSetInline(t *testing.T) {
 	s := ast.SelectionSet{
 		&ast.Field{
 			Name: common.NodeFieldName,

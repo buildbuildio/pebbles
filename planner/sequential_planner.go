@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/buildbuildio/pebbles/common"
-	"github.com/buildbuildio/pebbles/format"
 
 	"github.com/samber/lo"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -156,8 +155,6 @@ func createQueryPlanSteps(ctx *PlanningContext, insertionPoint []string, parentT
 			URL:            location,
 			ParentType:     parentType,
 			SelectionSet:   selectionSetForLocation,
-
-			formatter: format.NewBufferedFormatter().WithSchema(ctx.Schema),
 		}
 
 		result = append(result, qps)
