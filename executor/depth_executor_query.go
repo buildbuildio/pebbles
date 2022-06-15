@@ -8,6 +8,7 @@ import (
 	"github.com/buildbuildio/pebbles/gqlerrors"
 	"github.com/buildbuildio/pebbles/planner"
 	"github.com/buildbuildio/pebbles/requests"
+	"github.com/samber/lo"
 )
 
 // ExecutionRequest contains all data needed for DepthExecutor to execute request
@@ -24,7 +25,7 @@ func (er ExecutionRequest) ToGqlError(err error) *gqlerrors.Error {
 	}
 
 	return &gqlerrors.Error{
-		Path:       er.InsertionPoint,
+		Path:       lo.Map(er.InsertionPoint, func(el string, i int) interface{} { return el }),
 		Extensions: nil,
 		Message:    err.Error(),
 	}

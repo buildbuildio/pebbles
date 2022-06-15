@@ -3,6 +3,7 @@ package gqlerrors
 import (
 	"strings"
 
+	"github.com/samber/lo"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
@@ -21,7 +22,7 @@ type Error struct {
 	Extensions map[string]interface{} `json:"extensions"`
 	Message    string                 `json:"message"`
 	Locations  []Location             `json:"locations,omitempty"`
-	Path       []string               `json:"path,omitempty"`
+	Path       []interface{}          `json:"path,omitempty"`
 }
 
 func (e *Error) Error() string {
@@ -87,7 +88,7 @@ func FormatError(err error) ErrorList {
 			Extensions: ext,
 			Message:    e.Message,
 			Locations:  locations,
-			Path:       path,
+			Path:       lo.Map(path, func(el string, i int) interface{} { return el }),
 		}}
 	case gqlerror.List:
 		var list ErrorList

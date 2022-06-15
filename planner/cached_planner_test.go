@@ -7,6 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type EmptyPlanner struct {
+}
+
+func (EmptyPlanner) Plan(ctx *PlanningContext) (*QueryPlan, error) {
+	return nil, nil
+}
+
 func TestCachedPlannerSimplePlan(t *testing.T) {
 	cp := NewCachedPlanner(time.Hour)
 	query := `{ getMovies { id }}`
@@ -48,6 +55,15 @@ func TestCachedPlannerSimplePlan(t *testing.T) {
 		afterTime = t
 	}
 	assert.Equal(t, afterTime, beforeTime)
+}
+
+func TestCachedPlannerWithPlannerExecutor(t *testing.T) {
+	cp := NewCachedPlanner(time.Hour).WithPlannerExecutor(EmptyPlanner{})
+	query := `{ getMovies { id }}`
+
+	actual, _ := mustRunPlanner(t, cp, simpleSchema, query, simpleTum)
+
+	assert.Equal(t, "null", actual)
 }
 
 func TestCachedPlannerSimplePlanCacheExpires(t *testing.T) {

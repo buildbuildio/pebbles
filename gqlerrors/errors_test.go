@@ -75,3 +75,15 @@ func TestFormatErrorComplicatedGQLError(t *testing.T) {
 
 	assert.JSONEq(t, `[{"message": "hello", "path": ["path"], "extensions": {"smth": 42}, "locations": [{"line": 1, "column": 1}]}]`, string(bActual))
 }
+
+func TestErrorUnmarshall(t *testing.T) {
+	errMsg := `[{"message":"Error during request","path":["somePath","results",2,"items"]}]`
+
+	var err ErrorList
+
+	errJson := json.Unmarshal([]byte(errMsg), &err)
+
+	assert.NoError(t, errJson)
+
+	assert.Equal(t, "Error during request", err[0].Message)
+}

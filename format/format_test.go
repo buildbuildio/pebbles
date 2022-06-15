@@ -124,6 +124,62 @@ func TestFormatSelectionSetWithArgs(t *testing.T) {
 	assert.Equal(t, `query ($id: ID!) { node(id: $id) { id } }`, res)
 }
 
+func TestFormatSelectionSetWithArgsArray(t *testing.T) {
+	s := ast.SelectionSet{
+		&ast.Field{
+			Name: common.NodeFieldName,
+			Definition: &ast.FieldDefinition{
+				Name: "Node",
+				Type: ast.NamedType("Node", nil),
+				Arguments: ast.ArgumentDefinitionList{
+					&ast.ArgumentDefinition{
+						Name: "ids",
+						Type: ast.NonNullListType(ast.NonNullNamedType("ID", nil), nil),
+					},
+				},
+			},
+			Arguments: ast.ArgumentList{
+				&ast.Argument{
+					Name: "ids",
+					Value: &ast.Value{
+						Kind: ast.ListValue,
+						Raw:  "",
+						Children: ast.ChildValueList{{
+							Name: "",
+							Value: &ast.Value{
+								Kind: ast.Variable,
+								Raw:  "id",
+								Definition: &ast.Definition{
+									Name: "ID",
+								},
+								ExpectedType: ast.NamedType("ID!", nil),
+								Children:     nil,
+							},
+						}},
+					},
+				},
+			},
+			SelectionSet: ast.SelectionSet{
+				&ast.Field{
+					Name: common.IDFieldName,
+				},
+			},
+		},
+	}
+
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"ID": {
+				Name: "ID",
+			},
+		},
+	}
+
+	res := testFormatter.Copy().WithSchema(schema).FormatSelectionSet(s)
+
+	assert.Equal(t, `query ($id: ID!) { node(ids: [$id]) { id } }`, res)
+}
+
 func TestFormatSelectionSetChildrenArgumentList(t *testing.T) {
 	s := ast.SelectionSet{
 		&ast.Field{

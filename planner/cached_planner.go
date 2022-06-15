@@ -32,8 +32,9 @@ func NewCachedPlanner(ttl time.Duration) *CachedPlanner {
 	}
 }
 
-func (cp *CachedPlanner) WithExecutor(e Planner) {
+func (cp *CachedPlanner) WithPlannerExecutor(e Planner) *CachedPlanner {
 	cp.executor = e
+	return cp
 }
 
 func (cp *CachedPlanner) hash(ctx *PlanningContext) hashKey {

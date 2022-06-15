@@ -241,6 +241,7 @@ func (f *Formatter) walkArgumentList(s ast.SelectionSet) map[string]string {
 			}
 
 			ad := field.Definition.Arguments.ForName(a.Name)
+
 			if ad == nil {
 				continue
 			}
@@ -295,6 +296,10 @@ func (f *Formatter) walkChildrenArgumentList(typeDef *ast.Definition, childs ast
 		}
 
 		if ch.Value.Kind == ast.Variable {
+			// child name is empty if it's an array, f.e. hello(arrArg: [$someVariable])
+			if ch.Name == "" {
+				res[ch.Value.Raw] = ch.Value.ExpectedType.String()
+			}
 			ad := typeDef.Fields.ForName(ch.Name)
 			if ad == nil {
 				continue

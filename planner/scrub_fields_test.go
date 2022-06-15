@@ -202,7 +202,7 @@ func TestScrubFieldsCleanEmptySF(t *testing.T) {
 	assert.JSONEq(t, expected, string(b))
 }
 
-func TestScrubFieldsRemoveEmptyFileds(t *testing.T) {
+func TestScrubFieldsRemoveEmptyFields(t *testing.T) {
 	sf := make(ScrubFields)
 
 	sf.Set([]string{"a", "b"}, "Test", "id")
@@ -219,6 +219,26 @@ func TestScrubFieldsRemoveEmptyFileds(t *testing.T) {
 	sf.Clean(obj)
 
 	expected := `{"c": 10}`
+
+	b, _ := json.Marshal(obj)
+
+	assert.JSONEq(t, expected, string(b))
+}
+
+func TestScrubFieldsCleanEmptyListResponse(t *testing.T) {
+	sf := make(ScrubFields)
+
+	sf.Set([]string{"a"}, "Test", "id")
+	sf.Set([]string{"b"}, "Test", "id")
+
+	obj := map[string]interface{}{
+		"a": []map[string]interface{}{},
+		"b": []interface{}{},
+	}
+
+	sf.Clean(obj)
+
+	expected := `{"a": [], "b": []}`
 
 	b, _ := json.Marshal(obj)
 

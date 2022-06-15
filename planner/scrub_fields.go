@@ -107,10 +107,16 @@ func (sf ScrubFields) clean(payload map[string]interface{}, path []string, field
 				removeParent = removeParent && toCleanParent
 			}
 		}
+		if len(v) == 0 {
+			removeParent = false
+		}
 	case []map[string]interface{}:
 		for _, vv := range v {
 			toCleanParent := sf.clean(vv, path[1:], fields)
 			removeParent = removeParent && toCleanParent
+		}
+		if len(v) == 0 {
+			removeParent = false
 		}
 	}
 
