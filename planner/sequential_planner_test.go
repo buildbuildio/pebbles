@@ -624,6 +624,54 @@ func TestUnionPlanUnionPartialScrubFields(t *testing.T) {
 	assert.JSONEq(t, expected, actual)
 }
 
+func TestUnionSingleSchemaSpread(t *testing.T) {
+	query := `
+	{
+		getZoos {
+			__typename
+			name
+			animals {
+				__typename
+				... on Wolf {
+					...AnimalFragment
+				}
+			}
+		}
+	}
+
+	fragment AnimalFragment on Animal {
+		... on Wolf {
+			...Wolf
+		}
+		__typename
+	}
+
+	fragment Wolf on Wolf {
+		__typename
+		id
+		species
+	}
+	`
+
+	actual, _ := mustRunPlanner(t, seqPlan, unionSchema, query, unionTum)
+
+	expected := `{
+		"RootSteps": [
+		  {
+			"URL": "0",
+			"ParentType": "Query",
+			"OperationName": null,
+			"SelectionSet": "{ getZoos { __typename name animals { __typename ... on Wolf { __typename id species } } } }",
+			"InsertionPoint": null,
+			"Then": null
+		  }
+		],
+		"ScrubFields": null
+	  }`
+
+	assert.JSONEq(t, expected, actual)
+}
+
 func TestInterfacePlanInlineSimple(t *testing.T) {
 	query := `
 	{

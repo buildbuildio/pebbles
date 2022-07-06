@@ -209,7 +209,7 @@ func (g *Gateway) queryHandler(w http.ResponseWriter, r *http.Request) {
 			var operation *ast.OperationDefinition
 			if request.OperationName != nil {
 				operation = query.Operations.ForName(*request.OperationName)
-			} else if len(query.Operations) == 1 && query.Operations[0].Name == "" {
+			} else if len(query.Operations) == 1 {
 				operation = query.Operations[0]
 			}
 

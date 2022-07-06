@@ -257,9 +257,69 @@ func TestGatewaySingleQuery(t *testing.T) {
 	gw, err := NewGateway([]string{""}, WithExecutor(me), WithPlanner(mp), WithDefaultPlayground(), WithRemoteSchemaIntrospector(mi))
 	assert.NoError(t, err)
 
+	for _, payload := range []string{
+		`{"operationName": "test", "query": "query test { test }", "variables": null}`,
+		`{"operationName": null, "query": "query test { test }", "variables": null}`,
+	} {
+		buf := &bytes.Buffer{}
+
+		buf.WriteString(payload)
+
+		r, err := http.NewRequest("POST", "localhost", buf)
+		assert.NoError(t, err)
+
+		f := http.HandlerFunc(gw.Handler)
+
+		rr := httptest.NewRecorder()
+
+		f(rr, r)
+
+		b := rr.Body.Bytes()
+
+		var res map[string]interface{}
+		json.Unmarshal(b, &res)
+
+		assert.Equal(t, "YES", res["data"].(map[string]interface{})["test"])
+		_, hasErrorsKeyword := res["errors"]
+		assert.False(t, hasErrorsKeyword)
+	}
+}
+
+func TestGatewaySingleQueryWrongOperationName(t *testing.T) {
+	mp := &MockPlanner{
+		Res: &planner.QueryPlan{
+			RootSteps: []*planner.QueryPlanStep{{
+				URL:        "0",
+				ParentType: "Query",
+				SelectionSet: ast.SelectionSet{&ast.Field{
+					Name:         "test",
+					SelectionSet: nil,
+				}},
+				InsertionPoint: nil,
+				Then:           nil,
+			}},
+		},
+	}
+	me := &MockExecutor{
+		Res: map[string]interface{}{
+			"test": "YES",
+		},
+	}
+
+	schema := `
+		type Query {
+			test: String!
+		}
+	`
+
+	s := gqlparser.MustLoadSchema(&ast.Source{Name: "fixture", Input: schema})
+	mi := &MockRemoteSchemaIntrospector{Res: []*ast.Schema{s}}
+	gw, err := NewGateway([]string{""}, WithExecutor(me), WithPlanner(mp), WithDefaultPlayground(), WithRemoteSchemaIntrospector(mi))
+	assert.NoError(t, err)
+
 	buf := &bytes.Buffer{}
 
-	buf.WriteString(`{"operationName": "test", "query": "query test { test }", "variables": null}`)
+	buf.WriteString(`{"operationName": "wrong", "query": "query test { test }", "variables": null}`)
 
 	r, err := http.NewRequest("POST", "localhost", buf)
 	assert.NoError(t, err)
@@ -275,9 +335,8 @@ func TestGatewaySingleQuery(t *testing.T) {
 	var res map[string]interface{}
 	json.Unmarshal(b, &res)
 
-	assert.Equal(t, "YES", res["data"].(map[string]interface{})["test"])
 	_, hasErrorsKeyword := res["errors"]
-	assert.False(t, hasErrorsKeyword)
+	assert.True(t, hasErrorsKeyword)
 }
 
 func TestGatewayMultipleQueries(t *testing.T) {

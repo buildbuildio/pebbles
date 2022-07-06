@@ -114,7 +114,22 @@ func sanitizeSelectionSet(ctx *PlanningContext, selectionSet ast.SelectionSet, i
 				}
 				result = append(result, childSelectionSet...)
 			case ast.Union:
-				s.SelectionSet = childSelectionSet
+				s.SelectionSet = nil
+				for _, sel := range childSelectionSet {
+					// when getting the same definition, then unfold it
+					if ss, ok := sel.(*ast.InlineFragment); ok && s.ObjectDefinition == ss.ObjectDefinition {
+						s.SelectionSet = append(s.SelectionSet, ss.SelectionSet...)
+					} else {
+						// leave only unique selections
+						innerSel, ok := sel.(*ast.Field)
+						if ok && selectionSetHasFieldNamed(s.SelectionSet, innerSel.Alias) {
+							continue
+						}
+
+						s.SelectionSet = append(s.SelectionSet, sel)
+					}
+
+				}
 				result = append(result, s)
 			default:
 				result = append(result, childSelectionSet...)

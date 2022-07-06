@@ -120,8 +120,14 @@ var unionSchema = `
 		species: String!
 	}
 
+	type Zoo {
+		name: String!
+		animals: [Animal!]!
+	}
+
 	type Query {
 		getAnimals: [Animal!]!
+		getZoos: [Zoo!]!
 		node(id: ID!): Node
 	}
 `
@@ -130,7 +136,15 @@ var unionTum = merger.TypeURLMap{
 	"Query": {
 		Fields: map[string]string{
 			"getAnimals": "0",
+			"getZoos":    "0",
 		},
+	},
+	"Zoo": {
+		Fields: map[string]string{
+			"name":    "0",
+			"animals": "0",
+		},
+		IsImplementsNode: false,
 	},
 	"Dog": {
 		Fields: map[string]string{
