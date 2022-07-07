@@ -484,7 +484,7 @@ func TestExtendPlan(t *testing.T) {
 }
 
 func TestUnionPlanUnion(t *testing.T) {
-	query := `
+	for _, query := range []string{`
 	{
 		getAnimals {
 			__typename
@@ -503,42 +503,78 @@ func TestUnionPlanUnion(t *testing.T) {
 			}
 		}
 	}
-	`
+	`, `
+	{
+		getAnimals {
+			__typename
+			...Animal
+		}
+	}
 
-	actual, _ := mustRunPlanner(t, seqPlan, unionSchema, query, unionTum)
+	fragment Animal on Animal {
+		__typename
+		... on Cat {
+			...Cat
+		}
+		... on Dog {
+			...Dog
+		}
+		... on Wolf {
+			...Wolf
+		}
+	}
 
-	expected := `{
-		"RootSteps": [
-		  {
-			"URL": "0",
-			"ParentType": "Query",
-			"OperationName": null,
-			"SelectionSet": "{ getAnimals { __typename ... on Cat { id } ... on Dog { id } ... on Wolf { id species } } }",
-			"InsertionPoint": null,
-			"Then": [
-				{
-					"URL": "1",
-					"ParentType": "Cat",
-					"OperationName": null,
-					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Cat { name } } }",
-					"InsertionPoint": ["getAnimals"],
-					"Then": null
-				},
-				{
-					"URL": "1",
-					"ParentType": "Dog",
-					"OperationName": null,
-					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Dog { name trained } } }",
-					"InsertionPoint": ["getAnimals"],
-					"Then": null
-				}
-			]
-		  }
-		],
-		"ScrubFields": null
-	  }`
+	fragment Cat on Cat {
+		id
+		name
+	}
 
-	assert.JSONEq(t, expected, actual)
+	fragment Dog on Dog {
+		id
+		name
+		trained
+	}
+
+	fragment Wolf on Wolf {
+		id
+		species
+	}
+	`} {
+		actual, _ := mustRunPlanner(t, seqPlan, unionSchema, query, unionTum)
+
+		expected := `{
+			"RootSteps": [
+			  {
+				"URL": "0",
+				"ParentType": "Query",
+				"OperationName": null,
+				"SelectionSet": "{ getAnimals { __typename ... on Cat { id } ... on Dog { id } ... on Wolf { id species } } }",
+				"InsertionPoint": null,
+				"Then": [
+					{
+						"URL": "1",
+						"ParentType": "Cat",
+						"OperationName": null,
+						"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Cat { name } } }",
+						"InsertionPoint": ["getAnimals"],
+						"Then": null
+					},
+					{
+						"URL": "1",
+						"ParentType": "Dog",
+						"OperationName": null,
+						"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Dog { name trained } } }",
+						"InsertionPoint": ["getAnimals"],
+						"Then": null
+					}
+				]
+			  }
+			],
+			"ScrubFields": null
+		  }`
+
+		assert.JSONEq(t, expected, actual)
+	}
 }
 
 func TestUnionPlanJustTypename(t *testing.T) {
