@@ -244,3 +244,25 @@ func TestScrubFieldsCleanEmptyListResponse(t *testing.T) {
 
 	assert.JSONEq(t, expected, string(b))
 }
+
+func TestScrubFieldsNullResponse(t *testing.T) {
+	sf := make(ScrubFields)
+
+	sf.Set([]string{"a", "c"}, "Test", "id")
+	sf.Set([]string{"a"}, "Test", "id")
+
+	obj := map[string]interface{}{
+		"a": map[string]interface{}{
+			"c":  nil,
+			"id": "1",
+		},
+	}
+
+	sf.Clean(obj)
+
+	expected := `{"a": {"c": null}}`
+
+	b, _ := json.Marshal(obj)
+
+	assert.JSONEq(t, expected, string(b))
+}

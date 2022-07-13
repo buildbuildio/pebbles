@@ -118,6 +118,9 @@ func (sf ScrubFields) clean(payload map[string]interface{}, path []string, field
 		if len(v) == 0 {
 			removeParent = false
 		}
+	default:
+		// case of null objects
+		removeParent = false
 	}
 
 	if removeParent {
