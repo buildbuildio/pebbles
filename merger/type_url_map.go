@@ -2,6 +2,7 @@ package merger
 
 import (
 	"github.com/buildbuildio/pebbles/common"
+	"golang.org/x/exp/slices"
 
 	"github.com/samber/lo"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -65,6 +66,31 @@ func (t TypeURLMap) Get(typename, fieldname string) (res string, ok bool) {
 
 	res, ok = t[typename].Fields[fieldname]
 	return
+}
+
+func (t TypeURLMap) GetForType(typename string) (res []string, ok bool) {
+	if t[typename] == nil {
+		return nil, false
+	}
+	typeFields := t[typename].Fields
+
+	urlMap := make(map[string]struct{})
+
+	for _, url := range typeFields {
+		if _, ok := urlMap[url]; ok {
+			continue
+		}
+
+		urlMap[url] = struct{}{}
+	}
+
+	for url := range urlMap {
+		res = append(res, url)
+	}
+
+	slices.Sort(res)
+
+	return res, true
 }
 
 func (t TypeURLMap) GetTypeIsImplementsNode(typename string) (res bool, ok bool) {

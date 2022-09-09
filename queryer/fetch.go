@@ -26,10 +26,6 @@ func (q *MultiOpQueryer) sendQueryRequest(payload []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// add ctx to request
-	if q.ctx != nil {
-		req = req.WithContext(q.ctx)
-	}
 	// add the current context to the request
 	req.Header.Set("Content-Type", "application/json")
 
@@ -50,6 +46,10 @@ func (q *MultiOpQueryer) sendMultipartRequest(payload []byte, contentType string
 }
 
 func (q *MultiOpQueryer) sendRequest(request *http.Request) ([]byte, error) {
+	// add ctx to request
+	if q.ctx != nil {
+		request = request.WithContext(q.ctx)
+	}
 	// we could have any number of middlewares that we have to go through so
 	for _, mdware := range q.mdwares {
 		err := mdware(request)

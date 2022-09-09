@@ -42,6 +42,58 @@ func TestSimplePlan(t *testing.T) {
 	assert.JSONEq(t, expected, actual)
 }
 
+func TestSimplePlanNode(t *testing.T) {
+	query := `{ node(id: "author_2556") {... on Author {id}}}`
+
+	actual, _ := mustRunPlanner(t, seqPlan, simpleSchema, query, simpleTum)
+
+	expected := `{
+		"RootSteps": [
+		  {
+			"URL": "0",
+			"ParentType": "Query",
+			"OperationName": null,
+			"SelectionSet": "{ node(id: \"author_2556\") { ... on Author { id } } }",
+			"InsertionPoint": null,
+			"Then": null
+		  }
+		],
+		"ScrubFields": {"node#Author": ["__typename"], "node#Movie": ["__typename"]}
+	  }`
+
+	assert.JSONEq(t, expected, actual)
+}
+
+func TestSimplePlanNodeManyFields(t *testing.T) {
+	query := `{ node(id: "author_2556") {... on Author {id name movies {id}}}}`
+
+	actual, _ := mustRunPlanner(t, seqPlan, simpleSchema, query, simpleTum)
+
+	expected := `{
+		"RootSteps": [
+		  {
+			"URL": "0",
+			"ParentType": "Query",
+			"OperationName": null,
+			"SelectionSet": "{ node(id: \"author_2556\") { ... on Author { movies { id } } id } }",
+			"InsertionPoint": null,
+			"Then": null
+		  },
+		  {
+			"URL": "1",
+			"ParentType": "Query",
+			"OperationName": null,
+			"SelectionSet": "{ node(id: \"author_2556\") { ... on Author { name } id } }",
+			"InsertionPoint": null,
+			"Then": null
+		  }
+		],
+		"ScrubFields": {"node#Author": ["__typename"], "node#Movie": ["__typename"]}
+	  }`
+
+	assert.JSONEq(t, expected, actual)
+}
+
 func TestSimplePlanOperationName(t *testing.T) {
 	query := `query Operation { getMovies { id title(language: French) author { id name } }}`
 

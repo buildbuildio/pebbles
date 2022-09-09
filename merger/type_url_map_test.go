@@ -42,5 +42,22 @@ func TestTypeURLMapNoID(t *testing.T) {
 	tm.Set(common.IDFieldName, "test", "url")
 
 	v, ok := tm.Get(common.IDFieldName, "test")
+	assert.True(t, ok)
 	assert.Equal(t, "url", v)
+}
+
+func TestTypeURLMapGetForType(t *testing.T) {
+	tm := make(TypeURLMap)
+
+	tm.Set("test", "test2", "url2")
+	tm.Set("test", "test3", "url1")
+	tm.Set("test", "test1", "url1")
+	tm.Set("other", "test1", "url3")
+
+	urls, ok := tm.GetForType("test")
+	assert.True(t, ok)
+	assert.EqualValues(t, []string{"url1", "url2"}, urls)
+
+	_, ok = tm.GetForType("test123")
+	assert.False(t, ok)
 }

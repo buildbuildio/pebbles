@@ -238,19 +238,34 @@ func formatSelectionSetForInterface(ctx *PlanningContext, insertionPoint []strin
 func routeSelectionSet(ctx *PlanningContext, parentType, parentLocation string, input ast.SelectionSet) (map[string]ast.SelectionSet, error) {
 	result := map[string]ast.SelectionSet{}
 	if parentLocation == "" {
-		// if we're at the root, we extract the selection set for each service
-		for _, loc := range ctx.TypeURLMap.GetURLs() {
-			ss, err := filterSelectionSetByLoc(ctx, input, loc, parentType)
-			if err != nil {
-				return nil, err
+		// we're at root
+		// check for node query
+		groupRes, otherSelectionSet, err := groupSelectionSetForNodeField(ctx, input)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(otherSelectionSet) > 0 {
+			// extract the selection set for each service
+			for _, loc := range ctx.TypeURLMap.GetURLs() {
+				ss, err := filterSelectionSetByLoc(ctx, otherSelectionSet, loc, parentType)
+				if err != nil {
+					return nil, err
+				}
+				if len(ss) > 0 {
+					result[loc] = ss
+				}
 			}
-			if len(ss) > 0 {
-				result[loc] = ss
+
+			if ss, err := filterSelectionSetByLoc(ctx, otherSelectionSet, common.InternalServiceName, parentType); err == nil && len(ss) > 0 {
+				result[common.InternalServiceName] = ss
 			}
 		}
 
-		if ss, err := filterSelectionSetByLoc(ctx, input, common.InternalServiceName, parentType); err == nil && len(ss) > 0 {
-			result[common.InternalServiceName] = ss
+		if len(groupRes) > 0 {
+			for k, v := range groupRes {
+				result[k] = append(result[k], v...)
+			}
 		}
 
 		return result, nil
@@ -259,7 +274,7 @@ func routeSelectionSet(ctx *PlanningContext, parentType, parentLocation string, 
 	for _, selection := range input {
 		switch selection := selection.(type) {
 		case *ast.Field:
-			if common.IsBuiltinName(selection.Name) && parentLocation == "" {
+			if common.IsBuiltinName(selection.Name) {
 				continue
 			}
 			var loc string
@@ -318,6 +333,82 @@ func filterSelectionSetByLoc(ctx *PlanningContext, ss ast.SelectionSet, loc, par
 	}
 
 	return res, nil
+}
+
+// example:
+// In: { ... on Author { id, name, movies { id }}}
+// Out: 0 -- { ... on Author { id, name }}, 1 -- { ... on Author { movies {id} }}
+func groupSelectionSetForNodeField(ctx *PlanningContext, selectionSet ast.SelectionSet) (map[string]ast.SelectionSet, ast.SelectionSet, error) {
+	res := make(map[string]ast.SelectionSet)
+
+	var nodeFields []*ast.Field
+	var otherSelectionSet ast.SelectionSet
+
+	for _, selection := range common.SelectionSetToFields(selectionSet, nil) {
+		if selection.Name == common.NodeFieldName {
+			nodeFields = append(nodeFields, selection)
+		} else {
+			otherSelectionSet = append(otherSelectionSet, selection)
+		}
+	}
+
+	if len(nodeFields) == 0 {
+		return nil, otherSelectionSet, nil
+	}
+
+	for _, field := range nodeFields {
+		for _, selection := range field.SelectionSet {
+			frag, ok := selection.(*ast.InlineFragment)
+			if !ok {
+				continue
+			}
+
+			var foundIDField *ast.Field
+			innerRes := make(map[string]ast.SelectionSet)
+
+			knownLocs, ok := ctx.TypeURLMap.GetForType(frag.TypeCondition)
+			if !ok {
+				return nil, nil, fmt.Errorf("could not find location for type %s", frag.TypeCondition)
+			}
+
+			for _, childSel := range common.SelectionSetToFields(frag.SelectionSet, nil) {
+				if childSel.Name == common.IDFieldName {
+					tmp := *childSel
+					foundIDField = &tmp
+					continue
+				}
+				fieldLoc, err := ctx.GetURL(frag.TypeCondition, childSel.Name, common.InternalServiceName)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				innerRes[fieldLoc] = append(innerRes[fieldLoc], childSel)
+			}
+
+			for k, v := range innerRes {
+				newFrag := *frag
+				newFrag.SelectionSet = v
+				innerRes[k] = ast.SelectionSet{&newFrag}
+			}
+
+			// only id field is queried
+			if len(innerRes) == 0 && len(knownLocs) > 0 {
+				innerRes[knownLocs[0]] = ast.SelectionSet{frag}
+			} else if foundIDField != nil {
+				for key := range innerRes {
+					innerRes[key] = append(innerRes[key], foundIDField)
+				}
+			}
+
+			for key, value := range innerRes {
+				newField := *field
+				newField.SelectionSet = value
+				res[key] = append(res[key], &newField)
+			}
+		}
+	}
+
+	return res, otherSelectionSet, nil
 }
 
 func addIDFieldToSelectionSet(selectionSet ast.SelectionSet) ast.SelectionSet {

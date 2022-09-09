@@ -2,6 +2,7 @@ package planner
 
 import (
 	"encoding/json"
+	"sort"
 	"testing"
 
 	"github.com/buildbuildio/pebbles/merger"
@@ -10,6 +11,17 @@ import (
 	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
+
+func deepSortPlanSteps(qps []*QueryPlanStep) {
+	sort.SliceStable(qps, func(i, j int) bool {
+		return qps[i].URL+qps[i].QueryString < qps[j].URL+qps[j].QueryString
+	})
+	for _, step := range qps {
+		if step.Then != nil {
+			deepSortPlanSteps(step.Then)
+		}
+	}
+}
 
 func mustRunPlanner(t *testing.T, p Planner, schema, query string, tum merger.TypeURLMap) (string, *QueryPlan) {
 	t.Helper()
@@ -25,6 +37,11 @@ func mustRunPlanner(t *testing.T, p Planner, schema, query string, tum merger.Ty
 		TypeURLMap: tum,
 	})
 	require.NoError(t, err)
+
+	if actual != nil && actual.RootSteps != nil {
+		deepSortPlanSteps(actual.RootSteps)
+	}
+
 	v, _ := json.Marshal(actual)
 	return string(v), actual
 }
