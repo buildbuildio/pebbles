@@ -11,6 +11,37 @@ import (
 	"github.com/samber/lo"
 )
 
+type indexMap map[string][]int
+
+// Set sets indexes for value and returns true if it's a new value
+func (im indexMap) Set(index int, value interface{}) bool {
+	v, ok := value.(string)
+	if !ok {
+		return true
+	}
+	if im[v] == nil {
+		im[v] = make([]int, 0)
+	}
+
+	im[v] = append(im[v], index)
+	return len(im[v]) == 1
+}
+
+// GetSameIndexes returns all indexes associated with provided.
+// If it's the ony one it return null
+// Otherwise all indexes included provided are returned
+func (im indexMap) GetSameIndexes(i int) []int {
+	for _, v := range im {
+		if v[0] == i {
+			if len(v) != 1 {
+				return v
+			}
+			break
+		}
+	}
+	return nil
+}
+
 // ExecutionRequest contains all data needed for DepthExecutor to execute request
 type ExecutionRequest struct {
 	QueryPlanStep  *planner.QueryPlanStep
@@ -29,11 +60,6 @@ func (er ExecutionRequest) ToGqlError(err error) *gqlerrors.Error {
 		Extensions: nil,
 		Message:    err.Error(),
 	}
-}
-
-type queryerBatchRequest struct {
-	Inputs            []*requests.Request
-	ExecutionRequests []*ExecutionRequest
 }
 
 type queryerResponse struct {
@@ -86,24 +112,33 @@ func (de *DepthExecutor) executeRequests(ers []*ExecutionRequest) ([]*queryerRes
 	}
 
 	// all requests already grouped by queryer
-	batchRequest := &queryerBatchRequest{
-		Inputs:            make([]*requests.Request, len(ers)),
-		ExecutionRequests: make([]*ExecutionRequest, len(ers)),
-	}
+	batchRequest := make([]*requests.Request, 0, len(ers))
+	iMap := make(indexMap)
 
 	for i, req := range ers {
 		variables, err := de.getVariables(req)
 		if err != nil {
 			return nil, err
 		}
+		// exclude same requests to optimize queryer
+		// check insertion point, if it's not empty, then it's a child query
+		// which is always node
+		if len(req.InsertionPoint) > 0 {
+			if id, ok := variables[common.IDFieldName]; ok {
+				isNewValue := iMap.Set(i, id)
+				if !isNewValue {
+					continue
+				}
+			}
+		}
+
 		// form input
 		input := &requests.Request{
 			Query:         req.QueryPlanStep.QueryString,
 			Variables:     variables,
 			OperationName: req.QueryPlanStep.OperationName,
 		}
-		batchRequest.Inputs[i] = input
-		batchRequest.ExecutionRequests[i] = req
+		batchRequest = append(batchRequest, input)
 	}
 
 	q, ok := de.ctx.Queryers[ers[0].QueryPlanStep.URL]
@@ -111,20 +146,36 @@ func (de *DepthExecutor) executeRequests(ers []*ExecutionRequest) ([]*queryerRes
 		return nil, fmt.Errorf("unable to find queryer for: %s", ers[0].QueryPlanStep.URL)
 	}
 
-	resps, err := q.Query(batchRequest.Inputs)
+	resps, err := q.Query(batchRequest)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(resps) != len(batchRequest.Inputs) {
+	if len(resps) != len(batchRequest) {
 		return nil, errors.New("not all requests were fetched")
 	}
 
-	qResps := make([]*queryerResponse, len(batchRequest.Inputs))
+	qResps := make([]*queryerResponse, len(ers))
 	for i, resp := range resps {
-		qResps[i] = &queryerResponse{
-			Response:         resp,
-			ExecutionRequest: batchRequest.ExecutionRequests[i],
+		indexes := iMap.GetSameIndexes(i)
+		if indexes == nil {
+			qResps[i] = &queryerResponse{
+				Response:         resp,
+				ExecutionRequest: ers[i],
+			}
+			continue
+		}
+
+		for _, ind := range indexes {
+			var copyResp map[string]interface{}
+			copyResp, err := copyMap(resp)
+			if err != nil {
+				return nil, err
+			}
+			qResps[ind] = &queryerResponse{
+				Response:         copyResp,
+				ExecutionRequest: ers[ind],
+			}
 		}
 	}
 

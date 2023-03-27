@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/buildbuildio/pebbles/common"
@@ -113,4 +114,16 @@ func copy2DStringArray(v [][]string) [][]string {
 		}
 	}
 	return res
+}
+
+func copyMap(m map[string]interface{}) (map[string]interface{}, error) {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	var r map[string]interface{}
+	if err := json.Unmarshal(b, &r); err != nil {
+		return nil, err
+	}
+	return r, nil
 }
