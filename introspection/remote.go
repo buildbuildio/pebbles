@@ -173,7 +173,7 @@ func introspectRemoteSchema(factory QueryerFactory, url string) (*ast.Schema, er
 		switch directive.Name {
 		case "":
 			return nil, errors.New("could not find directive's name")
-		case "skip", "deprecated", "include":
+		case "skip", "deprecated", "include", "specifiedBy":
 			// skip builtin stuff, it'll be lately added by gqlparser
 			continue
 		}
