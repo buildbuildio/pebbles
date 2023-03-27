@@ -14,7 +14,6 @@ func TestCopy2DStringArray(t *testing.T) {
 	// but pointers are not
 	assert.False(t, &src == &dest)
 	for i, el := range src {
-		//nolint:gosec,scopelint // want to validate pointers
 		assert.False(t, &el == &dest[i])
 	}
 }

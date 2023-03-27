@@ -6,11 +6,12 @@ import (
 )
 
 type DepthExecutorManager struct {
-	ctx                *ExecutionContext
-	depthExecutors     map[int]*DepthExecutor
-	pointDataExtractor PointDataExtractor
-	maxDepth           int
-	result             map[string]interface{}
+	ctx                   *ExecutionContext
+	depthExecutors        map[int]*DepthExecutor
+	pointDataExtractor    PointDataExtractor
+	maxDepth              int
+	result                map[string]interface{}
+	initialInsertionPoint []string
 }
 
 func NewDepthExecutorManager(ctx *ExecutionContext) *DepthExecutorManager {
@@ -36,12 +37,17 @@ func NewDepthExecutorManager(ctx *ExecutionContext) *DepthExecutorManager {
 		}
 	}
 
+	result := make(map[string]interface{})
+	if ctx.InitilaResult != nil {
+		result = ctx.InitilaResult
+	}
+
 	return &DepthExecutorManager{
 		ctx:                ctx,
 		depthExecutors:     depthExecutors,
 		pointDataExtractor: pointDataExtractor,
 		maxDepth:           maxDepth,
-		result:             make(map[string]interface{}),
+		result:             result,
 	}
 }
 
@@ -52,9 +58,14 @@ func (dem *DepthExecutorManager) Execute() (map[string]interface{}, error) {
 
 	// for initial step construct root queries
 	for _, step := range dem.depthExecutors[0].QueryPlanSteps {
+		insertionPoint := []string{}
+		if step.InsertionPoint != nil {
+			insertionPoint = step.InsertionPoint
+		}
+
 		executionRequests = append(executionRequests, &ExecutionRequest{
 			QueryPlanStep:  step,
-			InsertionPoint: []string{},
+			InsertionPoint: insertionPoint,
 		})
 	}
 

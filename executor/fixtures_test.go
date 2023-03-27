@@ -29,6 +29,11 @@ func (q *MockSuccessQueryer) URL() string {
 	return "mockSuccessQueryer"
 }
 
+// Subscribe mocks subscription function, not used in executor
+func (q *MockSuccessQueryer) Subscribe(*requests.Request, <-chan struct{}, chan *requests.Response) error {
+	return nil
+}
+
 // Query looks up the name of the query in the map of responses and returns the value
 func (q *MockSuccessQueryer) Query(inputs []*requests.Request) ([]map[string]interface{}, error) {
 	return []map[string]interface{}{q.Value}, nil
@@ -45,6 +50,11 @@ var _ queryer.Queryer = MockQueryerFunc{}
 // Query looks up the name of the query in the map of responses and returns the value
 func (q MockQueryerFunc) Query(inputs []*requests.Request) ([]map[string]interface{}, error) {
 	return q.F(inputs)
+}
+
+// Subscribe mocks subscription function, not used in executor
+func (q MockQueryerFunc) Subscribe(*requests.Request, <-chan struct{}, chan *requests.Response) error {
+	return nil
 }
 
 // Query looks up the name of the query in the map of responses and returns the value

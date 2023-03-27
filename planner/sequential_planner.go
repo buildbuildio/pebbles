@@ -19,8 +19,8 @@ func (sp SequentialPlanner) Plan(ctx *PlanningContext) (*QueryPlan, error) {
 		parentType = common.QueryObjectName
 	case ast.Mutation:
 		parentType = common.MutationObjectName
-	default:
-		return nil, fmt.Errorf("not implemented")
+	case ast.Subscription:
+		parentType = common.SubscriptionObjectName
 	}
 
 	selSet, sf := sanitizeSelectionSet(ctx, ctx.Operation.SelectionSet, nil)

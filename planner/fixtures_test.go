@@ -83,6 +83,10 @@ var simpleSchema = `
 	type Mutation {
 		saveAuthor(input: AuthorInput!): Author!
 	}
+
+	type Subscription {
+		authorAdded: Author!
+	}
 `
 
 var simpleTum = merger.TypeURLMap{
@@ -95,6 +99,11 @@ var simpleTum = merger.TypeURLMap{
 	"Mutation": {
 		Fields: map[string]string{
 			"saveAuthor": "1",
+		},
+	},
+	"Subscription": {
+		Fields: map[string]string{
+			"authorAdded": "1",
 		},
 	},
 	"Movie": {

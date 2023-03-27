@@ -7,10 +7,10 @@ import (
 )
 
 type ExecutionContext struct {
-	// RequestMiddlewares []graphql.NetworkMiddleware
-	QueryPlan *planner.QueryPlan
-	Request   *requests.Request
-	Queryers  map[string]queryer.Queryer
+	QueryPlan     *planner.QueryPlan
+	Request       *requests.Request
+	Queryers      map[string]queryer.Queryer
+	InitilaResult map[string]interface{}
 }
 
 type Executor interface {

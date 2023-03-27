@@ -87,7 +87,6 @@ func ExtractValueModifyingSource(
 
 // FindInsertionPoints returns the list of insertion points where provided step should be executed.
 // for usage information check tests
-//nolint:gocognit,gocyclo // copy paste mostly from original lib
 func FindInsertionPoints(
 	targetPoints []string,
 	selectionSet ast.SelectionSet,

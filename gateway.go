@@ -342,17 +342,21 @@ func emitError(w http.ResponseWriter, code int, err error) {
 }
 
 func (g *Gateway) Handler(w http.ResponseWriter, r *http.Request) {
-	if g.playgroundProvider != nil {
-		// on POSTs, we have to send the request to the graphqlHandler
-		if r.Method == http.MethodPost {
-			g.queryHandler(w, r)
-			return
-		}
-
-		// we are not handling a POST request so we have to show the user the playground
-		g.playgroundProvider.ServePlayground(w, r)
+	// via posts we recieve queries and mutations
+	if r.Method == http.MethodPost {
+		g.queryHandler(w, r)
 		return
 	}
 
-	g.queryHandler(w, r)
+	// via gets with proper headers we recieve subscriptions
+	if r.Method == http.MethodGet && r.Header.Get("upgrade") == "websocket" {
+		g.subscriptionHandler(w, r)
+		return
+	}
+
+	if g.playgroundProvider != nil {
+		g.playgroundProvider.ServePlayground(w, r)
+	}
+
+	return
 }
