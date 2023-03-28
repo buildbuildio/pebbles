@@ -11,32 +11,38 @@ import (
 	"github.com/samber/lo"
 )
 
-type indexMap map[string][]int
+type indexMapValue struct {
+	targetIndex int
+	indexes     []int
+}
+
+type indexMap map[string]*indexMapValue
 
 // Set sets indexes for value and returns true if it's a new value
-func (im indexMap) Set(index int, value interface{}) bool {
+func (im indexMap) Set(index int, targetIndex int, value interface{}) bool {
 	v, ok := value.(string)
 	if !ok {
 		return true
 	}
 	if im[v] == nil {
-		im[v] = make([]int, 0)
+		im[v] = &indexMapValue{
+			targetIndex: targetIndex,
+			indexes:     []int{index},
+		}
+		return true
 	}
 
-	im[v] = append(im[v], index)
-	return len(im[v]) == 1
+	im[v].indexes = append(im[v].indexes, index)
+	return false
 }
 
-// GetSameIndexes returns all indexes associated with provided.
-// If it's the ony one it return null
+// GetSameIndexes returns all indexes associated with provided target index.
+// If nothing found return null
 // Otherwise all indexes included provided are returned
-func (im indexMap) GetSameIndexes(i int) []int {
+func (im indexMap) GetSameIndexes(targetIndex int) []int {
 	for _, v := range im {
-		if v[0] == i {
-			if len(v) != 1 {
-				return v
-			}
-			break
+		if v.targetIndex == targetIndex {
+			return v.indexes
 		}
 	}
 	return nil
@@ -125,7 +131,7 @@ func (de *DepthExecutor) executeRequests(ers []*ExecutionRequest) ([]*queryerRes
 		// which is always node
 		if len(req.InsertionPoint) > 0 {
 			if id, ok := variables[common.IDFieldName]; ok {
-				isNewValue := iMap.Set(i, id)
+				isNewValue := iMap.Set(i, len(batchRequest), id)
 				if !isNewValue {
 					continue
 				}
