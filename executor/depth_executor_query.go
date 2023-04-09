@@ -3,6 +3,7 @@ package executor
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/buildbuildio/pebbles/common"
 	"github.com/buildbuildio/pebbles/gqlerrors"
@@ -111,6 +112,44 @@ func (de *DepthExecutor) getVariables(req *ExecutionRequest) (map[string]interfa
 	return variables, nil
 }
 
+func (de *DepthExecutor) isNeedToQuery(req *ExecutionRequest, variables map[string]interface{}) bool {
+	if common.IsRootObjectName(req.QueryPlanStep.ParentType) {
+		return true
+	}
+
+	if de.ctx.GetParentTypeFromIDFunc == nil {
+		return true
+	}
+
+	id, ok := variables[common.IDFieldName]
+	if !ok {
+		return true
+	}
+
+	parentType, ok := de.ctx.GetParentTypeFromIDFunc(id)
+	if !ok {
+		return true
+	}
+
+	return parentType == req.QueryPlanStep.ParentType
+}
+
+func (de *DepthExecutor) setIMap(index int, req *ExecutionRequest, variables map[string]interface{}, iMap indexMap) bool {
+	// exclude same requests to optimize queryer
+	// check for child query which is always node
+	if !common.IsRootObjectName(req.QueryPlanStep.ParentType) && len(variables) == 1 {
+		if id, ok := variables[common.IDFieldName]; ok {
+			return iMap.Set(
+				index,
+				len(iMap),
+				fmt.Sprintf("!%v%v", id, req.QueryPlanStep.QueryStringHash),
+			)
+		}
+	}
+
+	return iMap.Set(index, index, strconv.Itoa(index))
+}
+
 // prepareRequests walks through ers, appending information about the query (params and operation name)
 func (de *DepthExecutor) executeRequests(ers []*ExecutionRequest) ([]*queryerResponse, error) {
 	if len(ers) == 0 {
@@ -120,22 +159,21 @@ func (de *DepthExecutor) executeRequests(ers []*ExecutionRequest) ([]*queryerRes
 	// all requests already grouped by queryer
 	batchRequest := make([]*requests.Request, 0, len(ers))
 	iMap := make(indexMap)
+	nillResps := make(map[int]struct{})
 
 	for i, req := range ers {
 		variables, err := de.getVariables(req)
 		if err != nil {
 			return nil, err
 		}
-		// exclude same requests to optimize queryer
-		// check insertion point, if it's not empty, then it's a child query
-		// which is always node
-		if len(req.InsertionPoint) > 0 {
-			if id, ok := variables[common.IDFieldName]; ok {
-				isNewValue := iMap.Set(i, len(batchRequest), id)
-				if !isNewValue {
-					continue
-				}
-			}
+
+		if !de.isNeedToQuery(req, variables) {
+			nillResps[i] = struct{}{}
+			continue
+		}
+
+		if isNewValue := de.setIMap(i, req, variables, iMap); !isNewValue {
+			continue
 		}
 
 		// form input
@@ -164,12 +202,8 @@ func (de *DepthExecutor) executeRequests(ers []*ExecutionRequest) ([]*queryerRes
 	qResps := make([]*queryerResponse, len(ers))
 	for i, resp := range resps {
 		indexes := iMap.GetSameIndexes(i)
-		if indexes == nil {
-			qResps[i] = &queryerResponse{
-				Response:         resp,
-				ExecutionRequest: ers[i],
-			}
-			continue
+		if len(indexes) == 0 {
+			return nil, errors.New("missing mapping for indexes")
 		}
 
 		for _, ind := range indexes {
@@ -182,6 +216,15 @@ func (de *DepthExecutor) executeRequests(ers []*ExecutionRequest) ([]*queryerRes
 				Response:         copyResp,
 				ExecutionRequest: ers[ind],
 			}
+		}
+	}
+
+	for ind := range nillResps {
+		qResps[ind] = &queryerResponse{
+			Response: map[string]interface{}{
+				common.NodeFieldName: nil,
+			},
+			ExecutionRequest: ers[ind],
 		}
 	}
 

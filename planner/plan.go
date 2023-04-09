@@ -1,6 +1,7 @@
 package planner
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 
 	"github.com/buildbuildio/pebbles/common"
@@ -38,8 +39,9 @@ type QueryPlanStep struct {
 	Then           []*QueryPlanStep
 
 	// artifacts
-	QueryString   string
-	VariablesList []string
+	QueryString     string
+	QueryStringHash [32]byte
+	VariablesList   []string
 
 	// tools
 	formatter *format.BufferedFormatter
@@ -98,7 +100,9 @@ func (s *QueryPlanStep) setVariablesList() *QueryPlanStep {
 }
 
 func (s *QueryPlanStep) setQuery() *QueryPlanStep {
-	s.QueryString = s.formatter.FormatSelectionSet(s.SelectionSet)
+	queryString := s.formatter.FormatSelectionSet(s.SelectionSet)
+	s.QueryString = queryString
+	s.QueryStringHash = sha256.Sum256([]byte(queryString))
 	return s
 }
 

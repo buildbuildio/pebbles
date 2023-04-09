@@ -27,6 +27,7 @@ type Gateway struct {
 	schema                   *ast.Schema
 	typeURLMap               merger.TypeURLMap
 	executor                 executor.Executor
+	getParentTypeFromIDFunc  executor.GetParentTypeFromIDFunc
 	planner                  planner.Planner
 	merger                   merger.Merger
 	remoteSchemaIntrospector introspection.RemoteSchemaIntrospector
@@ -76,6 +77,12 @@ func WithPlaygroundProvider(pp playground.PlaygroundProvider) GatewayOption {
 func WithQueryerFactory(f QueryerFactory) GatewayOption {
 	return func(g *Gateway) {
 		g.queryerFactory = f
+	}
+}
+
+func WithGetParentTypeFromIDFunc(fn executor.GetParentTypeFromIDFunc) GatewayOption {
+	return func(g *Gateway) {
+		g.getParentTypeFromIDFunc = fn
 	}
 }
 
@@ -266,9 +273,10 @@ func (g *Gateway) queryHandler(w http.ResponseWriter, r *http.Request) {
 
 			// fire the query
 			result, err = g.executor.Execute(&executor.ExecutionContext{
-				QueryPlan: plan,
-				Request:   request,
-				Queryers:  queryers,
+				QueryPlan:               plan,
+				Request:                 request,
+				Queryers:                queryers,
+				GetParentTypeFromIDFunc: g.getParentTypeFromIDFunc,
 			})
 
 			plan.ScrubFields.Clean(result)

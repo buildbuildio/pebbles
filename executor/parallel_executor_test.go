@@ -92,7 +92,7 @@ func TestExecutorPlanWithDependencies(t *testing.T) {
 			},
 			"1": &MockSuccessQueryer{
 				Value: map[string]interface{}{
-					"node": map[string]interface{}{
+					common.NodeFieldName: map[string]interface{}{
 						"favoriteCatPhoto": map[string]interface{}{
 							"url": "hello world",
 						},
@@ -183,7 +183,7 @@ func TestExecutorEmptyNode(t *testing.T) {
 			},
 			"1": &MockSuccessQueryer{
 				Value: map[string]interface{}{
-					"node": nil,
+					common.NodeFieldName: nil,
 				},
 			},
 		},
@@ -277,7 +277,7 @@ func TestExecutorInsertIntoInlineFragment(t *testing.T) {
 					for _, input := range inputs {
 						assert.Equal(t, map[string]interface{}{"id": "1"}, input.Variables)
 						res = append(res, map[string]interface{}{
-							"node": map[string]interface{}{
+							common.NodeFieldName: map[string]interface{}{
 								"address": "addressValue",
 							},
 						})
@@ -397,7 +397,7 @@ func TestExecutorInsertIntoListInlineFragments(t *testing.T) {
 					for _, input := range inputs {
 						assert.Contains(t, []interface{}{"1", "2"}, input.Variables["id"])
 						res = append(res, map[string]interface{}{
-							"node": map[string]interface{}{
+							common.NodeFieldName: map[string]interface{}{
 								"address": fmt.Sprintf("address-%s", input.Variables["id"]),
 							},
 						})
@@ -522,7 +522,7 @@ func TestExecutorInsertIntoInlineFragmentsList(t *testing.T) {
 					for _, input := range inputs {
 						assert.Contains(t, []interface{}{"1", "2"}, input.Variables["id"])
 						res = append(res, map[string]interface{}{
-							"node": map[string]interface{}{
+							common.NodeFieldName: map[string]interface{}{
 								"address": fmt.Sprintf("address-%s", input.Variables["id"]),
 							},
 						})
@@ -636,7 +636,7 @@ func TestExecutorInsertIntoLists(t *testing.T) {
 		Queryers: map[string]queryer.Queryer{
 			"0": MockQueryerFunc{
 				F: func(inputs []*requests.Request) ([]map[string]interface{}, error) {
-					if len(inputs) > 0 && !strings.Contains(inputs[0].Query, "node") {
+					if len(inputs) > 0 && !strings.Contains(inputs[0].Query, common.NodeFieldName) {
 						return []map[string]interface{}{{
 							"users": []interface{}{
 								map[string]interface{}{
@@ -675,7 +675,7 @@ func TestExecutorInsertIntoLists(t *testing.T) {
 						assert.Equal(t, map[string]interface{}{"id": "1"}, input.Variables)
 
 						res = append(res, map[string]interface{}{
-							"node": map[string]interface{}{
+							common.NodeFieldName: map[string]interface{}{
 								"firstName": followerName,
 							},
 						})
@@ -690,7 +690,7 @@ func TestExecutorInsertIntoLists(t *testing.T) {
 					var res []map[string]interface{}
 					for range inputs {
 						res = append(res, map[string]interface{}{
-							"node": map[string]interface{}{
+							common.NodeFieldName: map[string]interface{}{
 								"photoGallery": []interface{}{
 									map[string]interface{}{
 										"url": photoGalleryURL,
@@ -956,7 +956,7 @@ func TestExecutorIncludeIf(t *testing.T) {
 			},
 			"1": &MockSuccessQueryer{
 				Value: map[string]interface{}{
-					"node": map[string]interface{}{
+					common.NodeFieldName: map[string]interface{}{
 						"favoriteCatPhoto": map[string]interface{}{
 							"url": "hello world",
 						},
@@ -1161,7 +1161,7 @@ func TestExecutorPlansWithManyDeepDependencies(t *testing.T) {
 				F: func(inputs []*requests.Request) ([]map[string]interface{}, error) {
 					var res []map[string]interface{}
 					for range inputs {
-						res = append(res, map[string]interface{}{"node": map[string]interface{}{
+						res = append(res, map[string]interface{}{common.NodeFieldName: map[string]interface{}{
 							"house": map[string]interface{}{
 								"id": "2",
 								"cats": []interface{}{
@@ -1179,7 +1179,7 @@ func TestExecutorPlansWithManyDeepDependencies(t *testing.T) {
 					var res []map[string]interface{}
 					for range inputs {
 						res = append(res, map[string]interface{}{
-							"node": map[string]interface{}{
+							common.NodeFieldName: map[string]interface{}{
 								"id":      "2",
 								"address": "Cats street",
 							},
@@ -1191,7 +1191,7 @@ func TestExecutorPlansWithManyDeepDependencies(t *testing.T) {
 			},
 			"3": &MockSuccessQueryer{
 				Value: map[string]interface{}{
-					"node": map[string]interface{}{
+					common.NodeFieldName: map[string]interface{}{
 						"id": "3", "name": "kitty",
 					}},
 			},

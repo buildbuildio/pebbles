@@ -72,5 +72,130 @@ func TestExecuteRequestsSameNodeIDs(t *testing.T) {
 			}
 		})
 	}
+}
 
+func TestExecuteRequestsSameNodeIDsDifferentQueries(t *testing.T) {
+	pointDataExtractor := &CachedPointDataExtractor{cache: make(map[string]*PointData)}
+
+	de := DepthExecutor{
+		ctx: &ExecutionContext{
+			Queryers: map[string]queryer.Queryer{
+				"0": MockQueryerFunc{
+					F: func(inputs []*requests.Request) ([]map[string]interface{}, error) {
+						t.Helper()
+						var res []map[string]interface{}
+						require.Len(t, inputs, 2)
+						for _, input := range inputs {
+							v := input.Variables[common.IDFieldName]
+							res = append(res, map[string]interface{}{
+								common.IDFieldName: v,
+							})
+						}
+
+						return res, nil
+					},
+				},
+			},
+		},
+		PointDataExtractor: pointDataExtractor,
+	}
+
+	ers := []*ExecutionRequest{{
+		QueryPlanStep: &planner.QueryPlanStep{
+			URL:             "0",
+			QueryString:     "test",
+			QueryStringHash: [32]byte{1},
+			VariablesList:   nil,
+		},
+		InsertionPoint: []string{"test", "user#1"},
+	}, {
+		QueryPlanStep: &planner.QueryPlanStep{
+			URL:             "0",
+			QueryString:     "test",
+			QueryStringHash: [32]byte{2},
+			VariablesList:   nil,
+		},
+		InsertionPoint: []string{"test", "user#1"},
+	}}
+
+	resp, err := de.executeRequests(ers)
+	require.NoError(t, err)
+	require.Len(t, resp, 2)
+}
+
+func TestExecuteRequestsWithGetParentTypeFromIDFunc(t *testing.T) {
+	pointDataExtractor := &CachedPointDataExtractor{cache: make(map[string]*PointData)}
+	parentType := "1"
+
+	for _, parentTypeShouldMatch := range []bool{true, false} {
+		de := DepthExecutor{
+			ctx: &ExecutionContext{
+				GetParentTypeFromIDFunc: func(id interface{}) (string, bool) {
+					t.Helper()
+					if parentTypeShouldMatch {
+						return parentType, true
+					}
+
+					return parentType + "1", true
+
+				},
+				Queryers: map[string]queryer.Queryer{
+					"0": MockQueryerFunc{
+						F: func(inputs []*requests.Request) ([]map[string]interface{}, error) {
+							t.Helper()
+							var res []map[string]interface{}
+							if parentTypeShouldMatch {
+								require.Len(t, inputs, 2)
+							} else {
+								require.Empty(t, inputs)
+							}
+
+							for _, input := range inputs {
+								v := input.Variables[common.IDFieldName]
+								res = append(res, map[string]interface{}{
+									common.IDFieldName: v,
+								})
+							}
+
+							return res, nil
+						},
+					},
+				},
+			},
+			PointDataExtractor: pointDataExtractor,
+		}
+
+		ers := []*ExecutionRequest{{
+			QueryPlanStep: &planner.QueryPlanStep{
+				URL:             "0",
+				ParentType:      parentType,
+				QueryString:     "test",
+				QueryStringHash: [32]byte{1},
+				VariablesList:   nil,
+			},
+			InsertionPoint: []string{"test", "user#1"},
+		}, {
+			QueryPlanStep: &planner.QueryPlanStep{
+				URL:             "0",
+				ParentType:      parentType,
+				QueryString:     "test",
+				QueryStringHash: [32]byte{2},
+				VariablesList:   nil,
+			},
+			InsertionPoint: []string{"test", "user#1"},
+		}}
+
+		resp, err := de.executeRequests(ers)
+		require.NoError(t, err, parentTypeShouldMatch)
+		require.Len(t, resp, 2)
+		if parentTypeShouldMatch {
+			require.NotEqualValues(t, map[string]interface{}{
+				common.NodeFieldName: nil,
+			}, resp[0].Response)
+		} else {
+			require.EqualValues(t, map[string]interface{}{
+				common.NodeFieldName: nil,
+			}, resp[0].Response)
+		}
+	}
 }
