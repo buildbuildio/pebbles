@@ -7,7 +7,7 @@ require (
 	github.com/samber/lo v1.37.0
 	github.com/stretchr/testify v1.7.1
 	github.com/vektah/gqlparser/v2 v2.5.1
-	golang.org/x/exp v0.0.0-20230203172020-98cc5a0785f9
+	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17
 )
 
 require (

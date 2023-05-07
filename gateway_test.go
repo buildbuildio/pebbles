@@ -254,7 +254,16 @@ func TestGatewaySingleQuery(t *testing.T) {
 
 	s := gqlparser.MustLoadSchema(&ast.Source{Name: "fixture", Input: schema})
 	mi := &MockRemoteSchemaIntrospector{Res: []*ast.Schema{s}}
-	gw, err := NewGateway([]string{""}, WithExecutor(me), WithPlanner(mp), WithDefaultPlayground(), WithRemoteSchemaIntrospector(mi))
+	gw, err := NewGateway(
+		[]string{""},
+		WithExecutor(me),
+		WithPlanner(mp),
+		WithDefaultPlayground(),
+		WithGetParentTypeFromIDFunc(func(id interface{}) (string, bool) {
+			return "", false
+		}),
+		WithRemoteSchemaIntrospector(mi),
+	)
 	assert.NoError(t, err)
 
 	for _, payload := range []string{

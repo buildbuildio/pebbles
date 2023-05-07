@@ -100,7 +100,7 @@ func (g *Gateway) newSubscriptionEntry(id string, ctx *planner.PlanningContext) 
 				},
 				Request:       ctx.Request,
 				Queryers:      additionalQueryers,
-				InitilaResult: initialResult,
+				InitialResult: initialResult,
 			})
 
 			plan.ScrubFields.Clean(result)

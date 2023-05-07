@@ -3,6 +3,7 @@ package executor
 import (
 	"testing"
 
+	"github.com/buildbuildio/pebbles/common"
 	"github.com/buildbuildio/pebbles/planner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,12 +31,12 @@ func TestParseResponseEmpty(t *testing.T) {
 		IsErr:      false,
 	}, {
 		ParentType: "Other",
-		Response:   map[string]interface{}{"node": map[string]interface{}{"id": "1"}},
+		Response:   map[string]interface{}{common.NodeFieldName: map[string]interface{}{"id": "1"}},
 		Result:     map[string]interface{}{"id": "1"},
 		IsErr:      false,
 	}, {
 		ParentType: "Other",
-		Response:   map[string]interface{}{"node": nil},
+		Response:   map[string]interface{}{common.NodeFieldName: nil},
 		Result:     map[string]interface{}{},
 		IsErr:      false,
 	}, {
@@ -44,7 +45,7 @@ func TestParseResponseEmpty(t *testing.T) {
 		IsErr:      true,
 	}, {
 		ParentType: "Other",
-		Response:   map[string]interface{}{"node": "1"},
+		Response:   map[string]interface{}{common.NodeFieldName: "1"},
 		IsErr:      true,
 	}} {
 		resps := []*queryerResponse{{

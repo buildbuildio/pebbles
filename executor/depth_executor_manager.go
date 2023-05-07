@@ -38,8 +38,8 @@ func NewDepthExecutorManager(ctx *ExecutionContext) *DepthExecutorManager {
 	}
 
 	result := make(map[string]interface{})
-	if ctx.InitilaResult != nil {
-		result = ctx.InitilaResult
+	if ctx.InitialResult != nil {
+		result = ctx.InitialResult
 	}
 
 	return &DepthExecutorManager{
