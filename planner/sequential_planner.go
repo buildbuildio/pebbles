@@ -454,13 +454,14 @@ func isContainsField(selectionSet ast.SelectionSet, fieldname string) bool {
 }
 
 // convertSelectionSetToNode converts selection set and parent type to this
-// {
-//	 	node(id: $id) {
-//	 		... on parentType {
-//	 			selectionSet
-//	 		}
-//	 	}
-// }
+//
+//	{
+//		 	node(id: $id) {
+//		 		... on parentType {
+//		 			selectionSet
+//		 		}
+//		 	}
+//	}
 func convertSelectionSetToNodeQuery(parentType string, selectionSet ast.SelectionSet) ast.SelectionSet {
 	return ast.SelectionSet{
 		&ast.Field{
@@ -494,14 +495,15 @@ func convertSelectionSetToNodeQuery(parentType string, selectionSet ast.Selectio
 }
 
 // addFieldToNodeQuery adds provided selection to node query
-// {
-//	 	node(id: $id) {
-//	 		... on parentType {
-//	 			...existingSelectionSet
-//				selection (*)
-//	 		}
-//	 	}
-// }
+//
+//	{
+//		 	node(id: $id) {
+//		 		... on parentType {
+//		 			...existingSelectionSet
+//					selection (*)
+//		 		}
+//		 	}
+//	}
 func addFieldToNodeQuery(parentType string, nodeQuery ast.SelectionSet, selection ast.Selection) (ast.SelectionSet, bool) {
 	if len(nodeQuery) == 0 {
 		return nil, false
