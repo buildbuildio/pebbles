@@ -1,8 +1,9 @@
 package pebbles
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"time"
@@ -30,17 +31,7 @@ func (sd subscriptionDict) CleanAll() {
 	}
 }
 
-func (sd subscriptionDict) isAllClosed() bool {
-	isAllClosed := len(sd) != 0
-	for _, v := range sd {
-		if v.isClosed {
-			isAllClosed = isAllClosed && v.isClosed
-		}
-	}
-	return isAllClosed
-}
-
-func sendHeartbeat(conn net.Conn, closeCh <-chan struct{}) error {
+func sendHeartbeat(ctx context.Context, conn net.Conn) error {
 	timeTicker := time.NewTicker(time.Second * 4)
 	defer timeTicker.Stop()
 
@@ -54,17 +45,19 @@ func sendHeartbeat(conn net.Conn, closeCh <-chan struct{}) error {
 			if err := wsutil.WriteServerText(conn, bMsg); err != nil {
 				return err
 			}
-		case <-closeCh:
+		case <-ctx.Done():
 			return nil
 		}
 	}
 }
 
 func (g *Gateway) subscriptionHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	upgrader := ws.HTTPUpgrader{
 		Timeout: time.Second * 60,
 		Protocol: func(subprotocol string) bool {
-			return string(subprotocol) == "graphql-ws"
+			return subprotocol == "graphql-ws"
 		},
 	}
 
@@ -75,9 +68,7 @@ func (g *Gateway) subscriptionHandler(w http.ResponseWriter, r *http.Request) {
 
 	subDict := make(subscriptionDict)
 
-	closeCh := make(chan struct{})
-
-	stopConnFn := func() {
+	defer func() {
 		defer func() {
 			recover()
 		}()
@@ -91,18 +82,12 @@ func (g *Gateway) subscriptionHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// send close to goroutine
-		closeCh <- struct{}{}
-		close(closeCh)
+		// close conn
+		conn.Close()
 
 		// close all running handlers
 		subDict.CleanAll()
-
-		// close conn
-		conn.Close()
-	}
-
-	defer stopConnFn()
+	}()
 
 	for {
 		msg, err := wsutil.ReadClientText(conn)
@@ -129,7 +114,7 @@ func (g *Gateway) subscriptionHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			// start sending heartbeat
-			go sendHeartbeat(conn, closeCh)
+			go sendHeartbeat(ctx, conn)
 
 		// Let event handlers deal with starting operations
 		case requests.SubStart:
@@ -182,7 +167,8 @@ func (g *Gateway) subscriptionHandler(w http.ResponseWriter, r *http.Request) {
 		// a bug in our implementation; make this very obvious by logging
 		// an error
 		default:
-			fmt.Println("Unknown message", string(msg))
+			log.Println("Unknown message", string(msg))
+			return
 		}
 	}
 }
