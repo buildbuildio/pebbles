@@ -1,4 +1,5 @@
 # buildbuildio/pebbles
+[![Coverage Status](https://coveralls.io/repos/github/buildbuildio/pebbles/badge.svg?branch=main)](https://coveralls.io/github/buildbuildio/pebbles?branch=main)
 
 pebbles is a GraphQL federation gateway.
 
