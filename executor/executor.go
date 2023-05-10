@@ -9,10 +9,11 @@ import (
 type GetParentTypeFromIDFunc func(id interface{}) (string, bool)
 
 type ExecutionContext struct {
-	// RequestMiddlewares []graphql.NetworkMiddleware
 	QueryPlan *planner.QueryPlan
 	Request   *requests.Request
 	Queryers  map[string]queryer.Queryer
+	// InitialResult used when working with result from subscription
+	InitialResult map[string]interface{}
 	// GetParentTypeFromIDFunc is an optional optimization helper.
 	// It takes id and return correspondinf parentType, f.e. User
 	// If it fails to determine, return false

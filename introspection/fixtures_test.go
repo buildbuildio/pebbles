@@ -35,6 +35,11 @@ func (q *MockSuccessQueryer) Query(inputs []*requests.Request) ([]map[string]int
 	return []map[string]interface{}{res}, nil
 }
 
+// Subscribe does nothing here, so just mock it
+func (q *MockSuccessQueryer) Subscribe(*requests.Request, <-chan struct{}, chan *requests.Response) error {
+	return nil
+}
+
 func (q *MockSuccessQueryer) AsFactory() func(url string) queryer.Queryer {
 	return func(url string) queryer.Queryer {
 		return q

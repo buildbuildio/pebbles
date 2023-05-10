@@ -8,16 +8,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/buildbuildio/pebbles/gqlerrors"
 	"github.com/buildbuildio/pebbles/requests"
 )
-
-type Responses []Response
-
-type Response struct {
-	Errors gqlerrors.ErrorList    `json:"errors"`
-	Data   map[string]interface{} `json:"data"`
-}
 
 // SendQuery is responsible for sending the provided payload to the desingated URL
 func (q *MultiOpQueryer) sendQueryRequest(payload []byte) ([]byte, error) {
@@ -84,7 +76,7 @@ func (q *MultiOpQueryer) sendRequest(request *http.Request) ([]byte, error) {
 	return body, nil
 }
 
-func (q *MultiOpQueryer) fetch(inputs []*requests.Request) ([]Response, error) {
+func (q *MultiOpQueryer) fetch(inputs []*requests.Request) ([]requests.Response, error) {
 	var payload []byte
 
 	bRs, err := json.Marshal(inputs)
@@ -94,7 +86,7 @@ func (q *MultiOpQueryer) fetch(inputs []*requests.Request) ([]Response, error) {
 	payload = bRs
 
 	// a place to store the results
-	results := make(Responses, len(inputs))
+	results := make(requests.Responses, len(inputs))
 
 	// execute http request
 	response, err := q.sendQueryRequest(payload)
@@ -112,7 +104,7 @@ func (q *MultiOpQueryer) fetch(inputs []*requests.Request) ([]Response, error) {
 	return results, nil
 }
 
-func (q *MultiOpQueryer) fetchFile(input *requests.Request) (*Response, error) {
+func (q *MultiOpQueryer) fetchFile(input *requests.Request) (*requests.Response, error) {
 	uploadMap := extractFiles(input)
 
 	if uploadMap.Empty() {
@@ -134,7 +126,7 @@ func (q *MultiOpQueryer) fetchFile(input *requests.Request) (*Response, error) {
 		return nil, err
 	}
 
-	var resp Response
+	var resp requests.Response
 	if err := json.Unmarshal(responseBody, &resp); err != nil {
 		return nil, err
 	}

@@ -20,11 +20,10 @@ type RequestMiddleware func(*http.Request) error
 // MultiOpQueryer is a queryer that will batch subsequent query on some interval into a single network request
 // to a single target
 type MultiOpQueryer struct {
-	ctx             context.Context
-	url             string
-	client          *http.Client
-	mdwares         []RequestMiddleware
-	incomingMdwares []RequestMiddleware
+	ctx     context.Context
+	url     string
+	client  *http.Client
+	mdwares []RequestMiddleware
 
 	maxBatchSize int
 }
@@ -37,6 +36,7 @@ func NewMultiOpQueryer(url string, maxBatchSize int) *MultiOpQueryer {
 		url:          url,
 		client:       &http.Client{},
 		maxBatchSize: maxBatchSize,
+		ctx:          context.Background(),
 	}
 
 	// we're done creating the queryer

@@ -3,8 +3,8 @@
 pebbles is a GraphQL federation gateway.
 
 ## How it works
-It binds different GraphQL services via Relay Global Object Identification. In order to bind two types which spreads across multiple services, they must implement Node interface, ie
-```
+It binds different GraphQL services via Relay Global Object Identification. This means that any global object must have unique id. For example, Human object may have id `human_1`, and Animal object -- `animal_1`, so when resolving Node interface in each service you could know by only id what object client is querying. In order to bind two types which spreads across multiple services, they must implement Node interface, ie
+```graphql
 # Service A
 interface Node {
 	id: ID!
@@ -18,6 +18,10 @@ type Human implements Node {
 type Query {
 	node(id: ID!): Node
 	getHumans: [Human!]!
+}
+
+type Mutation {
+	saveHuman(name: String!): Human!
 }
 
 # Service B
@@ -38,6 +42,10 @@ type Animal {
 type Query {
 	node(id: ID!): Node
 	getAnimals: [Animal!]!
+}
+
+type Subscription {
+	animalAdded: Animal!
 }
 
 # Pebbles resulting Schema
@@ -61,16 +69,25 @@ type Query {
 	getHumans: [Human!]!
 	getAnimals: [Animal!]!
 }
+
+type Mutation {
+	saveHuman(name: String!): Human!
+}
+
+type Subscription {
+	animalAdded: Animal!
+}
 ```
 
 ## Why use pebbles?
 Our main goals are simple:
 1. Work with every valid schema, even with most complicated ones;
 2. Provide extendable schemas -- extend types, interfaces, directives and etc without unnecessary duplication;
-3. Customize as you grow -- all our building blocks are interfaces, so you can write your own.
+3. Support for Subscription queries (experimental);
+4. Customize as you grow -- all our building blocks are interfaces, so you can write your own.
 
 ## Example
-```
+```go
 package main
 
 import (

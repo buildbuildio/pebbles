@@ -187,6 +187,37 @@ func TestSimpleMutation(t *testing.T) {
 	assert.JSONEq(t, expected, actual)
 }
 
+func TestSimpleSubscription(t *testing.T) {
+	query := `subscription { authorAdded {id name movies { id title(language: French) }}}`
+
+	actual, _ := mustRunPlanner(t, seqPlan, simpleSchema, query, simpleTum)
+
+	expected := `{
+		"RootSteps": [
+		  {
+			"URL": "1",
+			"ParentType": "Subscription",
+			"OperationName": null,
+			"SelectionSet": "{ authorAdded { id name } }",
+			"InsertionPoint": null,
+			"Then": [
+				{
+					"URL": "0",
+					"ParentType": "Author",
+					"OperationName": null,
+					"SelectionSet": "query ($id: ID!) { node(id: $id) { ... on Author { movies { id title(language: French) } } } }",
+					"InsertionPoint": ["authorAdded"],
+					"Then": null
+				}
+			]
+		  }
+		],
+		"ScrubFields": null
+	  }`
+
+	assert.JSONEq(t, expected, actual)
+}
+
 func TestSimplePlanMultipleQueries(t *testing.T) {
 	query := `{ a: getMovies { id title(language: French) author { id name } } b: getMovies { id title(language: French) author { id name } }}`
 

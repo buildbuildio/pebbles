@@ -22,14 +22,11 @@ func TestGetPointData(t *testing.T) {
 
 	for _, row := range table {
 		t.Run(row.point, func(t *testing.T) {
-			//nolint:scopelint // test
 			pointData, err := de.Extract(row.point)
 			if err != nil {
 				t.Error(err.Error())
 				return
 			}
-
-			//nolint:scopelint // test
 			assert.Equal(t, row.data, pointData)
 		})
 	}
