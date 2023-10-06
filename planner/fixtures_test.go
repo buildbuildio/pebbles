@@ -123,6 +123,32 @@ var simpleTum = merger.TypeURLMap{
 	},
 }
 
+var sameTypeDifferentURLsSchema = `
+	type Human {
+		name: String!
+	}
+
+	type Query {
+		getHumans: [Human!]!
+		getAliens: [Human!]!
+	}
+`
+
+var sameTypeDifferentURLsTum = merger.TypeURLMap{
+	"Query": {
+		Fields: map[string]string{
+			"getHumans": "0",
+			"getAliens": "1",
+		},
+	},
+	"Human": {
+		Fields: map[string]string{
+			"name": "1",
+		},
+		IsImplementsNode: false,
+	},
+}
+
 var unionSchema = `
 	interface Node {
 		id: ID!

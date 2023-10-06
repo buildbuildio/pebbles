@@ -22,6 +22,18 @@ func (pc *PlanningContext) GetURL(typename, fieldname, fburl string) (string, er
 	if common.IsBuiltinName(fieldname) {
 		return fburl, nil
 	}
+
+	isImplementsNode, ok := pc.TypeURLMap.GetTypeIsImplementsNode(typename)
+	if !ok {
+		return "", fmt.Errorf("could not find location type %s", typename)
+	}
+
+	// return fallback url if typename is not root and not implements node
+	// it's required to do so for types which declared in multiple services
+	if !isImplementsNode && fburl != common.InternalServiceName && !common.IsRootObjectName(typename) {
+		return fburl, nil
+	}
+
 	url, ok := pc.TypeURLMap.Get(typename, fieldname)
 	if !ok {
 		return "", fmt.Errorf("could not find location for field %s of type %s", fieldname, typename)
