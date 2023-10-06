@@ -491,6 +491,28 @@ func TestSimplePlanSpreadFragmentManyUsages(t *testing.T) {
 	assert.JSONEq(t, expected, actual)
 }
 
+func TestSameTypeDifferentURLsPlan(t *testing.T) {
+	query := `{ getHumans { name }}`
+
+	actual, _ := mustRunPlanner(t, seqPlan, sameTypeDifferentURLsSchema, query, sameTypeDifferentURLsTum)
+
+	expected := `{
+		"RootSteps": [
+		  {
+			"URL": "0",
+			"ParentType": "Query",
+			"OperationName": null,
+			"SelectionSet": "{ getHumans { name } }",
+			"InsertionPoint": null,
+			"Then": null
+		  }
+		],
+		"ScrubFields": null
+	  }`
+
+	assert.JSONEq(t, expected, actual)
+}
+
 func TestDeepPlan(t *testing.T) {
 	query := `{ getAnimals { __typename id name species {__typename id name genus {__typename id name}} }}`
 

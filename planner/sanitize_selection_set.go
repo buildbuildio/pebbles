@@ -107,7 +107,7 @@ func sanitizeInterfaceInlineFragment(ctx *PlanningContext, selectionSet ast.Sele
 func setMissingScrubFieldsForFieldSelectionSet(ctx *PlanningContext, insertionPoint []string, field *ast.Field, scrubFields ScrubFields, addedFields []string) ScrubFields {
 	for _, f := range addedFields {
 		path := append(insertionPoint, field.Alias)
-		if t, _ := ctx.Schema.Types[field.Definition.Type.Name()]; t != nil && (t.Kind == ast.Interface || t.Kind == ast.Union) {
+		if t := ctx.Schema.Types[field.Definition.Type.Name()]; t != nil && (t.Kind == ast.Interface || t.Kind == ast.Union) {
 			for _, pt := range ctx.Schema.PossibleTypes[t.Name] {
 				scrubFields.Set(path, pt.Name, f)
 			}
@@ -123,7 +123,7 @@ func addScrubFieldsToSelectionSet(ctx *PlanningContext, selectionSet ast.Selecti
 	var addedFields []string
 	var isImplementsNode bool
 
-	if t, _ := ctx.Schema.Types[fieldname]; t != nil && (t.Kind == ast.Interface || t.Kind == ast.Union) {
+	if t := ctx.Schema.Types[fieldname]; t != nil && (t.Kind == ast.Interface || t.Kind == ast.Union) {
 		pt := ctx.Schema.PossibleTypes[fieldname]
 		if !isContainsField(selectionSet, common.TypenameFieldName) {
 			selectionSet = addTypenameFieldToSelectionSet(selectionSet)
@@ -135,7 +135,6 @@ func addScrubFieldsToSelectionSet(ctx *PlanningContext, selectionSet ast.Selecti
 		isImplementsNode, _ = ctx.TypeURLMap.GetTypeIsImplementsNode(pt[0].Name)
 
 		isImplementsNode = isImplementsNode && fd != nil
-
 	} else {
 		isImplementsNode, _ = ctx.TypeURLMap.GetTypeIsImplementsNode(fieldname)
 	}
