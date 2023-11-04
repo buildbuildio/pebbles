@@ -127,6 +127,90 @@ func TestResultFindInsertionPointRootList(t *testing.T) {
 	assert.Equal(t, finalInsertionPoint, generatedPoint)
 }
 
+func TestResultFindInsertionPointRootListAliases(t *testing.T) {
+	// we want the list of insertion points that point to
+	planInsertionPoint := []string{"myUsers", "photoGallery", "myLikedBy"}
+
+	// pretend we are in the middle of stitching a larger object
+	startingPoint := [][]string{}
+
+	// there are 6 total insertion points in this example
+	finalInsertionPoint := [][]string{
+		// photo 0 is liked by 2 users
+		{"myUsers:0", "photoGallery:0", "myLikedBy:0#1"},
+		{"myUsers:0", "photoGallery:0", "myLikedBy:1#2"},
+	}
+
+	// the selection we're going to make
+	stepSelectionSet := ast.SelectionSet{
+		&ast.Field{
+			Name:  "users",
+			Alias: "myUsers",
+			Definition: &ast.FieldDefinition{
+				Type: ast.ListType(ast.NamedType("User", nil), nil),
+			},
+			SelectionSet: ast.SelectionSet{
+				&ast.Field{
+					Name: "photoGallery",
+					Definition: &ast.FieldDefinition{
+						Type: ast.ListType(ast.NamedType("Photo", nil), nil),
+					},
+					SelectionSet: ast.SelectionSet{
+						&ast.Field{
+							Name:  "likedBy",
+							Alias: "myLikedBy",
+							Definition: &ast.FieldDefinition{
+								Type: ast.ListType(ast.NamedType("User", nil), nil),
+							},
+							SelectionSet: ast.SelectionSet{
+								&ast.Field{
+									Name: "totalLikes",
+									Definition: &ast.FieldDefinition{
+										Type: ast.NamedType("Int", nil),
+									},
+								},
+								&ast.Field{
+									Name: "id",
+									Definition: &ast.FieldDefinition{
+										Type: ast.NamedType("ID", nil),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// the result of the step
+	result := map[string]interface{}{
+		"myUsers": []interface{}{
+			map[string]interface{}{
+				"photoGallery": []interface{}{
+					map[string]interface{}{
+						"myLikedBy": []interface{}{
+							map[string]interface{}{
+								"totalLikes": 10,
+								"id":         "1",
+							},
+							map[string]interface{}{
+								"totalLikes": 10,
+								"id":         "2",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	generatedPoint, err := FindInsertionPoints(planInsertionPoint, stepSelectionSet, result, startingPoint)
+	assert.NoError(t, err)
+
+	assert.Equal(t, finalInsertionPoint, generatedPoint)
+}
+
 func TestResultFindInsertionPointStitchIntoObject(t *testing.T) {
 	// we want the list of insertion points that point to
 	planInsertionPoint := []string{"users", "photoGallery", "author"}
@@ -233,10 +317,6 @@ func TestResultFindInsertionPointWorkOnNil(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, expected, generatedPoint)
-}
-
-func TestResultFindInsertionPoint_handlesNullObjects(t *testing.T) {
-	t.Skip("Not yet implemented")
 }
 
 func TestResultFindObject(t *testing.T) {
