@@ -95,7 +95,7 @@ func FindInsertionPoints(
 ) ([][]string, error) {
 	oldBranch := copy2DStringArray(startingPoints)
 
-	// track the root of the selection set while  we walk
+	// track the root of the selection set while we walk
 	selectionSetRoot := selectionSet
 
 	// a place to refer to parts of the results
@@ -164,7 +164,11 @@ func FindInsertionPoints(
 				}
 
 				// the point we are going to add to the list
-				entryPoint := fmt.Sprintf("%s:%v", foundSelection.Name, entryI)
+				foundSelectionName := foundSelection.Alias
+				if foundSelectionName == "" {
+					foundSelectionName = foundSelection.Name
+				}
+				entryPoint := fmt.Sprintf("%s:%v", foundSelectionName, entryI)
 
 				newBranchSet := make([][]string, len(oldBranch))
 				for i, c := range oldBranch {

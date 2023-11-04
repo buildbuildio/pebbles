@@ -1,4 +1,3 @@
-// IMPORTANT: this is all copy paste, but with some changes to fix data mutation, leading to race conditions in runtime
 package executor
 
 import (
@@ -21,7 +20,6 @@ func FindSelection(matchString string, selectionSet ast.SelectionSet) *ast.Field
 		}
 
 		if len(s.SelectionSet) > 0 {
-
 			if f := FindSelection(matchString, s.SelectionSet); f != nil {
 				return f
 			}

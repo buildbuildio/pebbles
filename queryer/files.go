@@ -1,4 +1,3 @@
-// generally copy paste from nautilus/graphql
 package queryer
 
 import (
