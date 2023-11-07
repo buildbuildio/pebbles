@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/buildbuildio/pebbles/common"
 	"github.com/buildbuildio/pebbles/queryer"
@@ -13,7 +14,6 @@ import (
 	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/formatter"
-	"golang.org/x/exp/slices"
 )
 
 var introspectionQueryName string = "IntrospectionQuery"
@@ -52,8 +52,8 @@ func (p *ParallelRemoteSchemaIntrospector) IntrospectRemoteSchemas(urls ...strin
 		return nil, err
 	}
 
-	slices.SortStableFunc(res, func(a, b *inner) bool {
-		return a.index < b.index
+	sort.SliceStable(res, func(i, j int) bool {
+		return res[i].index < res[j].index
 	})
 
 	return lo.Map(res, func(t *inner, _ int) *ast.Schema { return t.schema }), nil
