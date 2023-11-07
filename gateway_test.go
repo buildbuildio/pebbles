@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"testing"
 
 	"github.com/buildbuildio/pebbles/common"
@@ -17,7 +18,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
-	"golang.org/x/exp/slices"
 )
 
 type MockRemoteSchemaIntrospector struct {
@@ -73,7 +73,7 @@ func TestGatewayGetQueryers(t *testing.T) {
 	queryers := gw.getQueryers(nil, ps)
 
 	keys := lo.Keys(queryers)
-	slices.Sort(keys)
+	sort.Strings(keys)
 	assert.EqualValues(t, []string{"1", "2", "3", "4"}, keys)
 }
 

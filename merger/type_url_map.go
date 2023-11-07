@@ -1,8 +1,9 @@
 package merger
 
 import (
+	"sort"
+
 	"github.com/buildbuildio/pebbles/common"
-	"golang.org/x/exp/slices"
 
 	"github.com/samber/lo"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -88,7 +89,7 @@ func (t TypeURLMap) GetForType(typename string) (res []string, ok bool) {
 		res = append(res, url)
 	}
 
-	slices.Sort(res)
+	sort.Strings(res)
 
 	return res, true
 }
