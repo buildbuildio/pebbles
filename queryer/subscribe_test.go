@@ -19,9 +19,9 @@ import (
 )
 
 func TestSubscribe(t *testing.T) {
-	var called int
+	var called int32
 	testFn := func() {
-		called += 1
+		atomic.AddInt32(&called, 1)
 	}
 
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -129,7 +129,7 @@ func TestSubscribe(t *testing.T) {
 		assert.FailNow(t, "timeout")
 	}
 	closeCh <- struct{}{}
-	assert.Equal(t, 2, called)
+	assert.EqualValues(t, 2, atomic.LoadInt32(&called))
 }
 
 func TestSubscribeErrorQuery(t *testing.T) {
@@ -224,7 +224,6 @@ func TestSubscribeErrorQuery(t *testing.T) {
 func TestSubscribeErrorNoSupportForWs(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		return
-
 	}))
 	defer s.Close()
 
