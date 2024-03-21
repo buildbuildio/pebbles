@@ -20,20 +20,16 @@ type indexMapValue struct {
 type indexMap map[string]*indexMapValue
 
 // Set sets indexes for value and returns true if it's a new value
-func (im indexMap) Set(index int, targetIndex int, value interface{}) bool {
-	v, ok := value.(string)
-	if !ok {
-		return true
-	}
-	if im[v] == nil {
-		im[v] = &indexMapValue{
+func (im indexMap) Set(index int, targetIndex int, value string) bool {
+	if im[value] == nil {
+		im[value] = &indexMapValue{
 			targetIndex: targetIndex,
 			indexes:     []int{index},
 		}
 		return true
 	}
 
-	im[v].indexes = append(im[v].indexes, index)
+	im[value].indexes = append(im[value].indexes, index)
 	return false
 }
 
@@ -137,17 +133,18 @@ func (de *DepthExecutor) isNeedToQuery(req *ExecutionRequest, variables map[stri
 func (de *DepthExecutor) setIMap(index int, req *ExecutionRequest, variables map[string]interface{}, iMap indexMap) bool {
 	// exclude same requests to optimize queryer
 	// check for child query which is always node
+	nextTargetIndex := len(iMap)
 	if !common.IsRootObjectName(req.QueryPlanStep.ParentType) && len(variables) == 1 {
 		if id, ok := variables[common.IDFieldName]; ok {
 			return iMap.Set(
 				index,
-				len(iMap),
+				nextTargetIndex,
 				fmt.Sprintf("!%v%v", id, req.QueryPlanStep.QueryStringHash),
 			)
 		}
 	}
 
-	return iMap.Set(index, index, strconv.Itoa(index))
+	return iMap.Set(index, nextTargetIndex, strconv.Itoa(index))
 }
 
 // prepareRequests walks through ers, appending information about the query (params and operation name)
@@ -158,7 +155,7 @@ func (de *DepthExecutor) executeRequests(ers []*ExecutionRequest) ([]*queryerRes
 
 	// all requests already grouped by queryer
 	batchRequest := make([]*requests.Request, 0, len(ers))
-	iMap := make(indexMap)
+	iMap := make(indexMap, len(ers))
 	nillResps := make(map[int]struct{})
 
 	for i, req := range ers {
